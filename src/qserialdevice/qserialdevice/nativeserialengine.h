@@ -39,14 +39,17 @@ public:
     bool open(AbstractSerial::OpenMode mode);
     void close();
 
-    bool setBaudRate(AbstractSerial::BaudRate baudRate);
-    bool setInputBaudRate(AbstractSerial::BaudRate baudRate);
-    bool setOutputBaudRate(AbstractSerial::BaudRate baudRate);
+    bool setBaudRate(qint32 baudRate, AbstractSerial::BaudRateDirection baudDir);
     bool setDataBits(AbstractSerial::DataBits dataBits);
     bool setParity(AbstractSerial::Parity parity);
     bool setStopBits(AbstractSerial::StopBits stopBits);
     bool setFlowControl(AbstractSerial::Flow flow);
-    bool setCharIntervalTimeout(int msecs);
+
+    void setCharReadTimeout(int usecs);
+    int charReadTimeout() const;
+
+    void setTotalReadConstantTimeout(int msecs);
+    int totalReadConstantTimeout() const;
 
     bool setDtr(bool set) const;
     bool setRts(bool set) const;

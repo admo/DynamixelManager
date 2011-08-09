@@ -25,38 +25,48 @@
 /*! \~english
     \class AbstractSerial
 
-    \brief AbstractSerial class provides an interface to work with serial devices.
+    \brief Class AbstractSerial provides an interface to work with serial devices.
 
-    This class is cross-platform library that uses low-level API
+    This class is cross-platform library that uses low-level native API
     to access serial devices. \n
-    The class uses Qt4 framework and can be used to create applications Qt4.\n
+    The class uses Qt4 framework and can be used to create applications Qt4. \n
 
-    With the implementation of the class structure AbstractSerial for the basic structure
-    has been chosen the class structure \b QAbstractSocket,
-    ie class structure is similar to the structure AbstractSerial \b QAbstractSocket
-    class and the ideology of public/private classes \b pimpl.\n
+    When you implement the class structure AbstractSerial for the basic structure has been chosen the class structure \b QAbstractSocket,
+    in which the class is inherited from \b QIODevice and corresponds to the ideology of public/private classes \b pimpl. \n
 
-    The work of this class of serial device at a \b low level is in asynchronous mode, ie:
-    - Handle to the device opened in non-blocking mode.
-    - Functions read and write returns immediately without waiting for the arrival of characters (bytes).
-    - The structures of the device responsible for the expectation of characters "ignored".
+    By \b QIODevice override and implement the following virtual methods (see the documentation about the Qt4 class \b QIODevice): \n
+    \b Public \b methods:
+    - qint64 bytesAvailable() const
+    - qint64 bytesToWrite() const
+    - void close()
+    - bool isSequential() const
+    - bool open(OpenMode mode)
+    - bool reset()
+    - bool waitForBytesWritten(int msecs)
+    - bool waitForReadyRead(int msecs)
     .
 
-    But using \b wrappers (ie class methods AbstractSerial) the low-level API is
-    involuntary blocking operations I/O, ie:
-    - Calling AbstractSerial::read() reads the data with the expectation of the next character and control
-    the number of bytes actually read.\n
-    Therefore, the method returns \b after the specified number of bytes read!
-    - Calling AbstractSerial::write() is a write data with the expectation and control the
-    number of bytes actually written.\n
-    Therefore, the method returns \b after the specified number of bytes write!
+    \b Protected \b methods:
+    - qint64 readData(char *data, qint64 maxSize)
+    - qint64 writeData(const char *data, qint64 maxSize)
     .
 
-    \note With these features I/O (ie, so that the methods of the class waiting for the completion of
-    asynchronous operations I/O) at large volumes of data transmitted/received via the serial
-    device using the GUI, may be fading (brake) GUI.
-    It is therefore recommended to create an object of class AbstractSerial
-    in another thread or use other methods to ensure the responsiveness of GUI.\n
+    \b Signals:
+    - void bytesWritten(qint64 bytes)
+    - void readyRead()
+
+    \note Other methods \b QIODevice remained untouched (by default).
+
+    Class AbstractSerial supported on the following operating systems:
+
+    <TABLE>
+    <TR><TH> Operating System </TH><TH> Support </TH><TH> Note </TH></TR>
+    <TR><TD> MS Windows 2K,XP,Vista,7 </TD><TD> Yes </TD><TD> Full </TD></TR>
+    <TR><TD> Distributions GNU Linux </TD><TD> Yes </TD><TD> Full </TD></TR>
+    <TR><TD> Mac OSX </TD><TD> Yes </TD><TD> May be a problem. To test. </TD></TR>
+    </TABLE>
+
+    \b A \b brief \b description \b use.
 
     Getting Started with the class should begin with the creation of an object instance AbstractSerial.\n
     Example:
@@ -66,17 +76,17 @@
         ..
     \endcode
 
-    At the same object depending on the OS will get the name of the serial device from the list:
-    \verbatim
-        OS:                            The name of the default device:
-        Windows                        "COM1"
-        IRIX                           "/dev/ttyf1"
-        HPUX                           "/dev/tty1p0"
-        SOLARIS                        "/dev/ttya"
-        FREEBSD                        "/dev/ttyd1"
-        LINUX                          "/dev/ttyS0"
-        <default>                      "/dev/ttyS0"
-    \endverbatim
+    In this case, the object, depending on the OS, get the name of the serial device:
+    <TABLE>
+    <TR><TH> Operating System </TH><TH> Default device name </TH></TR>
+    <TR><TD> MS Windows 2K,XP,Vista,7 </TD><TD> "COM1" </TD></TR>
+    <TR><TD> IRIX </TD><TD> "/dev/ttyf1" </TD></TR>
+    <TR><TD> HPUX </TD><TD> "/dev/tty1p0" </TD></TR>
+    <TR><TD> SOLARIS </TD><TD> "/dev/ttya" </TD></TR>
+    <TR><TD> FREEBSD </TD><TD> "/dev/ttyd1" </TD></TR>
+    <TR><TD> LINUX </TD><TD> "/dev/ttyS0" </TD></TR>
+    <TR><TD> <default> </TD><TD> "/dev/ttyS0" </TD></TR>
+    </TABLE>
 
     Next, you need a device (object) to assign a name actually exists in the system:
     - void AbstractSerial::setDeviceName(const QString &deviceName) sets the device name.
@@ -85,9 +95,7 @@
 
     To open a serial device, you must call the method:
     - bool AbstractSerial::open(OpenMode mode) opens the device.
-    \note The device is always open in exclusive mode so other processes can not access the device.
-
-    Class AbstractSerial supports only these options are open: AbstractSerial::OpenMode.\n
+    .
     Example:
     \code
         ..
@@ -95,6 +103,11 @@
         bool ret = serialDevice->open(AbstractSerial::ReadOnly);
         ..
     \endcode
+    \note
+    - The device is always opened in exclusive mode, so other processes can not access this device.
+    - The device does not support such options for opening a: \b Append, \b Truncate and \b Text.
+
+    .
 
     To close the serial device, you must call the method:
     - void AbstractSerial::close() closes the serial device.
@@ -102,27 +115,62 @@
 
     Once the device is successfully opened, you are ready to configure it.\n
     To configure should use the following methods:
-    - bool AbstractSerial::setBaudRate(AbstractSerial::BaudRate) sets the rate of exchange.
-    \sa setInputBaudRate(AbstractSerial::BaudRate baudRate), setOutputBaudRate(AbstractSerial::BaudRate baudRate)
+    - bool AbstractSerial::setBaudRate(AbstractSerial::BaudRate, BaudRateDirection baudDir) sets the rate of exchange.
     - bool AbstractSerial::setDataBits(AbstractSerial::DataBits) sets the number of bits of data.
     - bool AbstractSerial::setParity(AbstractSerial::Parity) set parity.
     - bool AbstractSerial::setStopBits(AbstractSerial::StopBits) sets the number of stop bits.
     - bool AbstractSerial::setFlowControl(AbstractSerial::Flow) sets the control flow control.
     - bool AbstractSerial::setCharIntervalTimeout(int msecs) sets the timeout character when reading data.
-    \note For reliable data reading should be empirically select timeout \a msecs and
-    usually sufficient value \a 10ms for all speeds.
-    This method simplifies the setting of the serial device.
+    - void AbstractSerial::setTotalReadConstantTimeout(int msecs) sets the waiting time of packet data when reading.
+    .
+
+    \note When using methods setCharIntervalTimeout() and setTotalReadConstantTimeout()
+    desirable to adopt the following recommendations:
+    -# If you use \b buffered mode of operation with a device (ie, at the opening of \b not flag is \b used by \b Unbuffered),
+    then set the timeouts, these methods do not need, ie they must be equal to 0 (default).
+    This is necessary for the immediate return of the read functions for automatic acceptance of data into the buffer AbstractSerial.
+    Any read timeout values different from zero, only slow the process of obtaining data.
+    When operating in this mode, the call to any method of family \b AbstractSerial::read() will always return
+    only the bytes that have been automatically accepted into the buffer class, and setting timeouts does not affect the operation
+    these methods of reading.
+    -# If you use \b not \b buffered mode of operation with a device (ie, at the opening of flag is \b used by \b Unbuffered),
+    the automatic data reception is disabled and setting time-outs will affect the method calls from the families \b AbstractSerial::read()! \n
+    In different operating behavior will be different (reason: a failed attempt to implement and cross-platform compilation by the author of all the features):
+        - The \b Windows:
+            -# Necessary to avoid the values of \a CharIntervalTimeout and \a TotalReadConstantTimeout equal to 0.
+            In theory, it was planned that at zero values of timeouts method \b AbstractSerial::read() will read the data
+            which are in the buffer device driver (not to be confused with the buffer AbstractSerial!) and return them immediately.
+            But for unknown reasons, this reading always returns 0, not depending on whether or not a ready-made data in the buffer.
+            -# If \a CharIntervalTimeout any, and \a TotalReadConstantTimeout > 0, then the method of reading \b AbstractSerial::read() will be
+            expected over time \a TotalReadConstantTimeout data, and then return them after the number of bytes read.
+            Because in its implementation, reading methods class AbstractSerial read chunks of 256 bytes (default), then set
+            \a TotalReadConstantTimeout to read more than 256 bytes does not make sense.
+            -# If \a CharIntervalTimeout any, and \a TotalReadConstantTimeout = -1, then in this mode, the automatic detection (conversion)
+            the optimal value of \a TotalReadConstantTimeout formula: \n
+            \verbatim
+            TotalReadConstantTimeout = [(start_bit data_bits parity_bit stop_bits) * 256 * 1000 / speed]
+                                         [(256 - 1) * CharIntervalTimeout / 1000], msec.
+            \endverbatim
+            In this case, the method of \b AbstractSerial::read() behaves similarly p.ii.
+            .
+        - The \b *nix:
+            -# If \a CharIntervalTimeout = 0 and \a TotalReadConstantTimeout any, the method of \b AbstractSerial::read() will return
+            data immediately.
+            -# If \a CharIntervalTimeout > 0 and \a TotalReadConstantTimeout any, the method of \b AbstractSerial::read() will read the data from
+            expectation of the next character.
+
+        .
 
     .
 
-    For the current configuration of the device used methods:
-    - QString AbstractSerial::baudRate() const returns a human-readable value of speed.
-    \sa inputBaudRate() const, outputBaudRate() const
+    For the get current configuration of the device used methods:
+    - QString AbstractSerial::baudRate(BaudRateDirection baudDir) const returns a human-readable value of speed.
     - QString AbstractSerial::dataBits() const returns a human-readable number of data bits.
     - QString AbstractSerial::parity() const returns a human-readable value parity.
     - QString AbstractSerial::stopBits() const returns a human-readable count stop bit.
     - QString AbstractSerial::flowControl() const returns a human-readable value for flow control.
     - int AbstractSerial::charIntervalTimeout() const returns a human-readable time-out value symbol.
+    - int totalReadConstantTimeout() const returns a human-readable time-out value package for reading.
     .
 
     For a list of class options used methods:
@@ -133,22 +181,7 @@
     - QStringList AbstractSerial::listFlowControl() const returns a human-readable list of flow control.
     .
 
-    To read data from the port you can use any method of:
-    - qint64 AbstractSerial::read(char *data, qint64 maxSize).
-    - QByteArray AbstractSerial::read(qint64 maxSize).
-    - QByteArray AbstractSerial::readAll().
-    .
-
-    \note When implementing these methods, the priority was placed on minimizing the loss of data when reading.
-    Theoretically, the size of received data is limited only \a qint64 or \a QByteArray.
-
-    To write data to the port you can use any method of:
-    - qint64 AbstractSerial::write(const char *data, qint64 maxSize).
-    - qint64 AbstractSerial::write(const char *data).
-    - qint64 AbstractSerial::write(const QByteArray &byteArray).
-    .
-
-    \note Theoretically, the size of received data is limited only \a qint64 or \a QByteArray.
+    To read the data from the port, as well as to write data to the port, you can use any public method to read or write of \b QIODevice. \n
 
     For waiting the arrival of data in the serial device using the method:
     - bool AbstractSerial::waitForReadyRead(int msecs) waits for the arrival time \a msecs
@@ -168,22 +201,21 @@
 
     To qualify as a RS-232 lines CTS, DSR, DCD, RI, RTS, DTR, ST, SR used method:
     - quint16 AbstractSerial::lineStatus() returns the encoded value of status lines bitwise \b OR
-    (see.. enum AbstractSerial::LineStatus).
+    (see.. enum AbstractSerial::LineStatusFlag).
 
-    \verbatim
-        LE    = 0x0001 - Line DSR (data set ready/line enable).
-        DTR   = 0x0002 - Line DTR (data terminal ready).
-        RTS   = 0x0004 - Line RTS (request to send).
-        ST    = 0x0008 - Line Secondary TXD (transmit).
-        SR    = 0x0010 - Line Secondary RXD (receive.)
-        CTS   = 0x0020 - Line CTS (clear to send).
-        DCD   = 0x0040 - Line DCD (data carrier detect).
-        RI    = 0x0080 - Line RNG (ring).
-        DSR   = 0x0100 - Line DSR (data set ready).
-
-        Err   = 0x8000 - Error get line status.
-    \endverbatim
-    .
+    <TABLE>
+    <TR><TH> Line </TH><TH> Value </TH><TH> Description </TH></TR>
+    <TR><TD> LineLE </TD><TD> 0x0001 </TD><TD> Line DSR (data set ready/line enable) </TD></TR>
+    <TR><TD> LineDTR </TD><TD> 0x0002 </TD><TD> Line DTR (data terminal ready) </TD></TR>
+    <TR><TD> LineRTS </TD><TD> 0x0004 </TD><TD> Line RTS (request to send) </TD></TR>
+    <TR><TD> LineST </TD><TD> 0x0008 </TD><TD> Line Secondary TXD (transmit) </TD></TR>
+    <TR><TD> LineSR </TD><TD> 0x0010 </TD><TD> Line Secondary RXD (receive) </TD></TR>
+    <TR><TD> LineCTS </TD><TD> 0x0020 </TD><TD> Line CTS (clear to send) </TD></TR>
+    <TR><TD> LineDCD </TD><TD> 0x0040 </TD><TD> Line DCD (data carrier detect) </TD></TR>
+    <TR><TD> LineRI </TD><TD> 0x0080 </TD><TD> Line RNG (ring) </TD></TR>
+    <TR><TD> LineDSR </TD><TD> 0x0100 </TD><TD> Line DSR (data set ready) </TD></TR>
+    <TR><TD> LineErr </TD><TD> 0x8000 </TD><TD> rror get line status </TD></TR>
+    </TABLE>
 
     To control the line breaks Tx methods are used:
     - bool AbstractSerial::sendBreak(int duration) sends a Tx stream of zero bits within a certain time.
@@ -198,27 +230,19 @@
     - void AbstractSerial::enableEmitStatus(bool enable).
     .
 
-    AbstractSerial class implements the following signals:
-    - void AbstractSerial::readyRead() emitted \b once at the parish in the receive buffer device at
-    least one byte of data. Event of the arrival of data is controlled in the loop of events.
-    When comes the next part of the data (or one byte) then the signal is not re-emitted.
-    To signal emitted again to read data from the buffer or reset the buffer.
-    Also, this signal is emitted each time a successful method call waitForReadyRead().
-    - void AbstractSerial::readyWrite() emitted when the clipboard is empty and the transmitter can send data.
-    - void AbstractSerial::bytesWritten(qint64 bytes) emitted upon the successful completion of the method of data write.
-    - void AbstractSerial::exception() emitted when errors ocurred.
-    - void AbstractSerial::ctsChanged(bool value) emitted when CTS line changed.
-    - void AbstractSerial::dsrChanged(bool value) emitted when DSR line changed.
-    - void AbstractSerial::ringChanged(bool value)) emitted when RING line changed.
+    Class AbstractSerial (in addition to signals QIODevice) provides the following signals:
     - void AbstractSerial::signalStatus(const QString &status, QDateTime current) carries information about the current
     status of the serial device, as well as time and date of status.\n
+    Emitted signal can be switched on/off method: AbstractSerial::enableEmitStatus(bool enable). \n
     This signal is emitted:
         - In carrying out methods of opening or closing device.
         - When errors in configuring the device.
         - When errors I/O devices.
         .
-
-    The emission signal signalStatus() can be switched on/off method: AbstractSerial::enableEmitStatus(bool enable).
+    - void AbstractSerial::exception() emitted when errors ocurred.
+    - void AbstractSerial::ctsChanged(bool value) emitted when CTS line changed.
+    - void AbstractSerial::dsrChanged(bool value) emitted when DSR line changed.
+    - void AbstractSerial::ringChanged(bool value)) emitted when RING line changed.
     .
 
     \n
@@ -241,6 +265,9 @@
 #include "abstractserial.h"
 #include "abstractserial_p.h"
 
+#if QT_VERSION >= 0x040700
+#include <QtCore/QElapsedTimer>
+#endif
 //#include <limits.h>
 
 //#define ABSTRACTSERIAL_DEBUG
@@ -250,9 +277,15 @@
 #include <QtCore/QLatin1String>
 #endif
 
-
 AbstractSerialPrivate::AbstractSerialPrivate()
-    : emittedReadyRead(false)
+    : readBufferMaxSize(0)
+    , readBuffer(SERIALDEVICE_BUFFERSIZE)
+    , writeBuffer(SERIALDEVICE_BUFFERSIZE)
+    , isBuffered(false)
+    , readSerialNotifierCalled(false)
+    , readSerialNotifierState(false)
+    , readSerialNotifierStateSet(false)
+    , emittedReadyRead(false)
     , emittedBytesWritten(false)
     , emittedStatus(false)
     , serialEngine(0)
@@ -272,9 +305,7 @@ bool AbstractSerialPrivate::initSerialLayer()
     if (!this->serialEngine)
         return false;
 
-    //if (q->threadData->eventDispatcher)
-        serialEngine->setReceiver(this);
-
+    serialEngine->setReceiver(this);
     return true;
 }
 
@@ -287,30 +318,107 @@ void AbstractSerialPrivate::resetSerialLayer()
     }
 }
 
-void AbstractSerialPrivate::canReadNotification()
+bool AbstractSerialPrivate::canReadNotification()
 {
     Q_Q(AbstractSerial);
-    if (!this->emittedReadyRead) {
+
+    // Prevent recursive calls
+    if (this->readSerialNotifierCalled) {
+        if (!this->readSerialNotifierStateSet) {
+            this->readSerialNotifierStateSet = true;
+            this->readSerialNotifierState = this->serialEngine->isReadNotificationEnabled();
+            this->serialEngine->setReadNotificationEnabled(false);
+        }
+    }
+    readSerialNotifierCalled = true;
+
+    //if (!this->isBuffered)
+    //    this->serialEngine->setReadNotificationEnabled(false);
+
+    // If buffered, read data from the serial into the read buffer
+    qint64 newBytes = 0;
+    if (this->isBuffered) {
+        // Return if there is no space in the buffer
+        if (this->readBufferMaxSize
+            && (this->readBuffer.size() >= this->readBufferMaxSize)) {
+
+            readSerialNotifierCalled = false;
+            return false;
+        }
+
+        // If reading from the serial fails after getting a read
+        // notification, close the serial.
+        newBytes = this->readBuffer.size();
+
+        if (!this->readFromSerial()) {
+            readSerialNotifierCalled = false;
+            return false;
+        }
+        newBytes = this->readBuffer.size() - newBytes;
+
+        // If read buffer is full, disable the read serial notifier.
+        if (this->readBufferMaxSize
+            && (this->readBuffer.size() == this->readBufferMaxSize)) {
+
+            this->serialEngine->setReadNotificationEnabled(false);
+        }
+    }
+
+    // only emit readyRead() when not recursing, and only if there is data available
+    bool hasData = (this->isBuffered) ? (newBytes > 0) : (this->serialEngine->bytesAvailable() > 0);
+
+    if ((!this->emittedReadyRead) && hasData) {
         this->emittedReadyRead = true;
         emit q->readyRead();
+        this->emittedReadyRead = false;
     }
+
+    if ((!hasData) && this->serialEngine && (!this->serialEngine->isReadNotificationEnabled()))
+        this->serialEngine->setReadNotificationEnabled(true);
+
+    // reset the read serial notifier state if we reentered inside the
+    // readyRead() connected slot.
+    if (this->readSerialNotifierStateSet && this->serialEngine &&
+        (this->readSerialNotifierState != this->serialEngine->isReadNotificationEnabled())) {
+
+        this->serialEngine->setReadNotificationEnabled(this->readSerialNotifierState);
+        this->readSerialNotifierStateSet = false;
+    }
+    this->readSerialNotifierCalled = false;
+    return true;
 }
 
-void AbstractSerialPrivate::canWriteNotification()
+bool AbstractSerialPrivate::canWriteNotification()
 {
-    //Q_Q(AbstractSerial);
-    /*
-    emit q->readyWrite();
-    */
+#if defined (Q_OS_WIN)
+    if (this->serialEngine && this->serialEngine->isWriteNotificationEnabled())
+        this->serialEngine->setWriteNotificationEnabled(false);
+#endif
+
+    int tmp = this->writeBuffer.size();
+    this->flush();
+
+    if (this->serialEngine) {
+#if defined (Q_OS_WIN)
+        if (!this->writeBuffer.isEmpty())
+            this->serialEngine->setWriteNotificationEnabled(true);
+#else
+        if (this->writeBuffer.isEmpty())
+            this->serialEngine->setWriteNotificationEnabled(false);
+#endif
+    }
+
+    return (this->writeBuffer.size() < tmp);
 }
 
-void AbstractSerialPrivate::canExceptNotification()
+bool AbstractSerialPrivate::canExceptNotification()
 {
     Q_Q(AbstractSerial);
     emit q->exception();
+    return true;
 }
 
-void AbstractSerialPrivate::canLineNotification()
+bool AbstractSerialPrivate::canLineNotification()
 {
     Q_Q(AbstractSerial);
 
@@ -335,6 +443,7 @@ void AbstractSerialPrivate::canLineNotification()
         ringState = newState;
         emit q->ringChanged(ringState);
     }
+    return true;
 }
 
 void AbstractSerialPrivate::initialiseMap()
@@ -369,11 +478,9 @@ void AbstractSerialPrivate::initialiseMap()
     this->m_baudRateMap[AbstractSerial::BaudRate56000] = QObject::tr("56000 baud");
 #endif
     this->m_baudRateMap[AbstractSerial::BaudRate57600] = QObject::tr("57600 baud");
-/*
 #ifdef Q_OS_WIN
     this->m_baudRateMap[AbstractSerial::BaudRate76800]=QObject::tr("76800 baud");
 #endif
-*/
     this->m_baudRateMap[AbstractSerial::BaudRate115200] = QObject::tr("115200 baud");
 #ifdef Q_OS_WIN
     this->m_baudRateMap[AbstractSerial::BaudRate128000] = QObject::tr("128000 baud");
@@ -428,6 +535,9 @@ void AbstractSerialPrivate::initialiseMap()
 QString AbstractSerialPrivate::statusToString(AbstractSerial::Status val) const
 {
     switch (val) {
+    /* group of "SUCESS STATES" */
+
+    //all
     case AbstractSerial::ENone: return QObject::tr("No errors.");
     case AbstractSerial::ENoneOpen: return QObject::tr("Opened::Device is successfully opened. OK!");
     case AbstractSerial::ENoneClose: return QObject::tr("Closed::Device is successfully closed. OK!");
@@ -439,30 +549,40 @@ QString AbstractSerialPrivate::statusToString(AbstractSerial::Status val) const
     case AbstractSerial::ENoneSetCharTimeout: return QObject::tr("Controls::Char timeout is successfully set. OK!");
     case AbstractSerial::ENoneSetDtr: return QObject::tr("Controls::DTR is successfully changed. OK!");
     case AbstractSerial::ENoneSetRts: return QObject::tr("Controls::RTS is successfully changed. OK!");
+    case AbstractSerial::ENoneLineStatus: return QObject::tr("Controls::Status lines successfully get. OK!");
+    case AbstractSerial::ENoneSendBreak: return QObject::tr("Controls::Send break successfully. OK!");
+    case AbstractSerial::ENoneSetBreak: return QObject::tr("Controls::Set break successfully. OK!");
+    case AbstractSerial::ENoneFlush: return QObject::tr("Controls::Flush successfully. OK!");
+    case AbstractSerial::ENoneReset: return QObject::tr("Controls::Reset successfully. OK!");
 
+    /* Groups of "ERROR STATES" */
+
+    //group of "OPEN"
     case AbstractSerial::EOpen: return QObject::tr("Error opening. Error!");
     case AbstractSerial::EDeviceIsNotOpen: return QObject::tr("Device is not open. Error!");
-
     case AbstractSerial::EOpenModeUnsupported: return QObject::tr("Opened::Opened mode unsupported. Error!");
     case AbstractSerial::EOpenModeUndefined: return QObject::tr("Opened::Opened mode undefined. Error!");
     case AbstractSerial::EOpenInvalidFD: return QObject::tr("Opened::Invalid device descriptor. Error!");
     case AbstractSerial::EOpenOldSettingsNotSaved: return QObject::tr("Opened::Fail saved old settings. Error!");
     case AbstractSerial::EOpenGetCurrentSettings: return QObject::tr("Opened::Fail get current settings. Error!");
     case AbstractSerial::EOpenSetDefaultSettings: return QObject::tr("Opened::Fail set default settings. Error!");
-
     case AbstractSerial::EDeviceIsOpen: return QObject::tr("Device is already open. Error!");
 
+    //group of "CLOSE"
     case AbstractSerial::ECloseSetOldSettings: return QObject::tr("Closed::Fail set old settings. Error!");
     case AbstractSerial::ECloseFD: return QObject::tr("Closed::Fail close device descriptor. Error!");
     case AbstractSerial::EClose: return QObject::tr("Closed::Fail close device. Error!");
 
+    //group of "SETTINGS"
     case AbstractSerial::ESetBaudRate: return QObject::tr("Parameters::Set baud rate fail. Error!");
     case AbstractSerial::ESetDataBits: return QObject::tr("Parameters::Set data bits fail. Error!");
     case AbstractSerial::ESetParity: return QObject::tr("Parameters::Set parity fail. Error!");
     case AbstractSerial::ESetStopBits: return QObject::tr("Parameters::Set stop bits fail. Error!");
     case AbstractSerial::ESetFlowControl: return QObject::tr("Parameters::Set flow control fail. Error!");
     case AbstractSerial::ESetCharIntervalTimeout: return QObject::tr("Parameters::Set char interval timeout. Error!");
+    case AbstractSerial::ESetReadTotalTimeout: return QObject::tr("Parameters::Set total read interval timeout. Error!");
 
+    //group of "CONTROL"
     case AbstractSerial::EBytesAvailable: return QObject::tr("Controls::Get bytes available fail. Error!");
     case AbstractSerial::ESetDtr: return QObject::tr("Controls::Set DTR fail. Error!");
     case AbstractSerial::ESetRts: return QObject::tr("Controls::Set RTS fail. Error!");
@@ -476,9 +596,74 @@ QString AbstractSerialPrivate::statusToString(AbstractSerial::Status val) const
     case AbstractSerial::EFlush: return QObject::tr("Controls::Flush fail. Error!");
     case AbstractSerial::ESendBreak: return QObject::tr("Controls::Send break fail. Error!");
     case AbstractSerial::ESetBreak: return QObject::tr("Controls::Set break fail. Error!");
+    case AbstractSerial::EReset: return QObject::tr("Controls::Reset fail. Error!");
 
     default: return QObject::tr("AbstractSerial::statusToString(Status val) -> Status mode: %1 undefined. Error!").arg(val);
     }
+}
+
+void AbstractSerialPrivate::clearBuffers()
+{
+    this->writeBuffer.clear();
+    this->readBuffer.clear();
+}
+
+bool AbstractSerialPrivate::readFromSerial()
+{
+    qint64 bytesToRead = this->serialEngine->bytesAvailable();
+
+    if (bytesToRead <= 0)
+        return false;
+
+    if (this->readBufferMaxSize
+        && (bytesToRead > (this->readBufferMaxSize - this->readBuffer.size()))) {
+
+        bytesToRead = this->readBufferMaxSize - this->readBuffer.size();
+    }
+
+    char *ptr = this->readBuffer.reserve(bytesToRead);
+    qint64 readBytes = this->serialEngine->read(ptr, bytesToRead);
+
+    if (readBytes <= 0) {
+        this->readBuffer.chop(bytesToRead);
+        return false;
+    }
+    this->readBuffer.chop(int(bytesToRead - ((readBytes < 0) ? qint64(0) : readBytes)));
+    return true;
+}
+
+bool AbstractSerialPrivate::flush()
+{
+    Q_Q(AbstractSerial);
+
+    if ((!this->serialEngine) || this->writeBuffer.isEmpty())
+        return false;
+
+    int nextSize = this->writeBuffer.nextDataBlockSize();
+    const char *ptr = this->writeBuffer.readPointer();
+
+    // Attempt to write it all in one chunk.
+    qint64 written = this->serialEngine->write(ptr, nextSize);
+    if (written < 0) {
+        //TODO: Here emit error?
+        return false;
+    }
+
+    // Remove what we wrote so far.
+    this->writeBuffer.free(written);
+    if (written > 0) {
+        // Don't emit bytesWritten() recursively.
+        if (!this->emittedBytesWritten) {
+            this->emittedBytesWritten = true;
+            emit q->bytesWritten(written);
+            this->emittedBytesWritten = false;
+        }
+    }
+
+    if (this->writeBuffer.isEmpty() && this->serialEngine && this->serialEngine->isWriteNotificationEnabled())
+        this->serialEngine->setWriteNotificationEnabled(false);
+
+    return true;
 }
 
 
@@ -499,7 +684,7 @@ QString AbstractSerialPrivate::statusToString(AbstractSerial::Status val) const
     \endverbatim
 */
 AbstractSerial::AbstractSerial(QObject *parent)
-    : QObject(parent)
+    : QIODevice(parent)
     , d_ptr(new AbstractSerialPrivate())
 {
     Q_D(AbstractSerial);
@@ -530,7 +715,7 @@ AbstractSerial::~AbstractSerial()
 void AbstractSerial::setDeviceName(const QString &deviceName)
 {
     Q_D(AbstractSerial);
-    if ( this->isValid() && (!this->isOpen()) )
+    if (d->serialEngine && (!this->isOpen()))
         d->serialEngine->setDeviceName(deviceName);
 }
 
@@ -542,82 +727,51 @@ void AbstractSerial::setDeviceName(const QString &deviceName)
 QString AbstractSerial::deviceName() const
 {
     Q_D(const AbstractSerial);
-    return (this->isValid()) ? d->serialEngine->deviceName() : QString();
-}
-
-/*! \~english
-    \fn void AbstractSerial::setOpenMode(AbstractSerial::OpenMode mode)
-    Sets the mode of opening \a mode serial device.
-    It only works if the device is not yet open, otherwise ignored!
-    \param[in] mode Open mode ( see. AbstractSerial::OpenMode ).
-*/
-void AbstractSerial::setOpenMode(AbstractSerial::OpenMode mode)
-{
-    Q_D(const AbstractSerial);
-    if ( this->isValid() && (!this->isOpen()) && (mode != AbstractSerial::NotOpen) )
-        d->serialEngine->setOpenMode(mode);
-}
-
-/*! \~english
-    \fn AbstractSerial::OpenMode AbstractSerial::openMode() const
-    Returns the current mode of opening the serial device.
-    \return Open mode ( see. AbstractSerial::OpenMode ).
-*/
-AbstractSerial::OpenMode AbstractSerial::openMode() const
-{
-    Q_D(const AbstractSerial);
-    return (this->isValid()) ?
-            d->serialEngine->openMode() : AbstractSerial::NotOpen;
+    return (d->serialEngine) ? d->serialEngine->deviceName() : QString();
 }
 
 /*! \~english
     \fn bool AbstractSerial::open(OpenMode mode)
     Opens the serial device mode \a mode.
     It only works if the device is not yet open, otherwise ignored!
-    \param[in] mode Mode with which we want to open a serial device ( see. AbstractSerial::OpenMode ).
+    \param[in] mode Mode with which we want to open a serial device (see. AbstractSerial::OpenMode).
     \return \a False in case of error.
 */
 bool AbstractSerial::open(OpenMode mode)
 {
     Q_D(AbstractSerial);
-    if ( (!this->isOpen()) && (mode != AbstractSerial::NotOpen) ) {
-        if ( this->isValid() && d->serialEngine->open(mode) ) {
 
-            switch (mode) {
-            case AbstractSerial::ReadOnly:
-                d->serialEngine->setReadNotificationEnabled(true);
-                break;
-            case AbstractSerial::WriteOnly:
-                //d->serialEngine->setWriteNotificationEnabled(true);
-                break;
-            case AbstractSerial::ReadWrite:
-                d->serialEngine->setReadNotificationEnabled(true);
-                //d->serialEngine->setWriteNotificationEnabled(true);
-                break;
-            default:;
-            }
+    // Define while not supported modes.
+    static OpenMode unsupportedModes = (Append | Truncate | Text);
 
+    if (!this->isOpen()) {
+
+        if ((mode & unsupportedModes) || (NotOpen == mode)) {
+            this->emitStatusString(EOpenModeUnsupported);
+            return false;
+        }
+
+        if (d->serialEngine && d->serialEngine->open(mode)) {
+
+            d->clearBuffers();
+
+            if (ReadOnly & mode)
+                d->serialEngine->setReadNotificationEnabled(true);
+            if (WriteOnly & mode)
+                d->serialEngine->setWriteNotificationEnabled(true);
+
+            //d->serialEngine->setExceptionNotificationEnabled(true);
             d->serialEngine->setLineNotificationEnabled(true);
-
             this->emitStatusString(ENoneOpen);
-            return true;
-        }//isValid
+
+            d->isBuffered = (0 == (Unbuffered & mode));
+            return QIODevice::open(mode);
+        }
         this->emitStatusString(EOpen);
         return false;
     }
     this->emitStatusString(EDeviceIsOpen);
     return false;
-}
-
-/*! \~english
-    \fn bool AbstractSerial::isOpen() const
-    Returns the status of the serial device: open/closed.
-    \return \a True if the device is open.
-*/
-bool AbstractSerial::isOpen() const
-{
-    Q_D(const AbstractSerial);
-    return ( this->isValid() && d->serialEngine->isOpen() );
 }
 
 /*! \~english
@@ -629,11 +783,13 @@ void AbstractSerial::close()
     Q_D(AbstractSerial);
     if (this->isOpen()) {
         d->serialEngine->setReadNotificationEnabled(false);
-        //d->serialEngine->setWriteNotificationEnabled(false);
+        d->serialEngine->setWriteNotificationEnabled(false);
         //d->serialEngine->setExceptionNotificationEnabled(false);
         d->serialEngine->setLineNotificationEnabled(false);
         ///
+        d->clearBuffers();
         d->serialEngine->close();
+        QIODevice::close();
         this->emitStatusString(ENoneClose);
     }
     else
@@ -641,172 +797,143 @@ void AbstractSerial::close()
 }
 
 /*! \~english
-    \fn bool AbstractSerial::setBaudRate(BaudRate baudRate)
-    Sets the serial device, the speed \a baudRate:
-    - In Windows, this method sets only one type of speed.
-    - In *. nix this method sets the incoming and outgoing speed of the same.
-    .
-    \param[in] baudRate Desired speed of the serial device ( see. AbstractSerial::BaudRate ).
+    \fn bool AbstractSerial::setBaudRate(qint32 baudRate, BaudRateDirection baudDir)
+    Set the desired speed \a baudRate corresponding to directions \a baudDir.
+    \note In the *.nix can be set separately for the rate of transmission and reception,
+    in Windows is impossible and the method returns an error
+    (ie Windows supported only \a AllBaud direction type).
+    \param[in] baudRate Desired speed of the serial device as qint32.
+    \param[in] baudDir Baud rate direction.
     \return \a False in case of error.
 */
-bool AbstractSerial::setBaudRate(BaudRate baudRate)
+bool AbstractSerial::setBaudRate(qint32 baudRate, BaudRateDirection baudDir)
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        bool ret = d->serialEngine->setBaudRate(baudRate);
-        (ret) ? this->emitStatusString(ENoneSetBaudRate) : this->emitStatusString(ESetBaudRate);
-        return ret;
+        if (baudRate > 0)
+            ret = d->serialEngine->setBaudRate(baudRate, baudDir);
+        status = (ret) ? ENoneSetBaudRate : ESetBaudRate;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
-/*! \~english
-    \fn bool AbstractSerial::setInputBaudRate(BaudRate baudRate)
-    Set the serial device only incoming speed \a baudRate.
-    In Windows, this method always returns \a false since independent member rate is not supported.
-    \param[in] baudRate Desired incoming speed serial device ( see. AbstractSerial::BaudRate ).
-    \return \a False in case of error.
+/*
+    Converts speed type AbstractSerial::BaudRate in value qint32.
+    On error, returns -1.
 */
-bool AbstractSerial::setInputBaudRate(BaudRate baudRate)
+static qint32 baud_type_to_int_value(AbstractSerial::BaudRate baud)
 {
-    Q_D(AbstractSerial);
-    if (this->isOpen()) {
-        bool ret = d->serialEngine->setInputBaudRate(baudRate);
-        (ret) ? this->emitStatusString(ENoneSetBaudRate) : this->emitStatusString(ESetBaudRate);
-        return ret;
+    switch (baud) {
+    case AbstractSerial::BaudRate50: return 50;
+    case AbstractSerial::BaudRate75: return 75;
+    case AbstractSerial::BaudRate110: return 110;
+    case AbstractSerial::BaudRate134: return 134;
+    case AbstractSerial::BaudRate150: return 150;
+    case AbstractSerial::BaudRate200: return 200;
+    case AbstractSerial::BaudRate300: return 300;
+    case AbstractSerial::BaudRate600: return 600;
+    case AbstractSerial::BaudRate1200: return 1200;
+    case AbstractSerial::BaudRate1800: return 1800;
+    case AbstractSerial::BaudRate2400: return 2400;
+    case AbstractSerial::BaudRate4800: return 4800;
+    case AbstractSerial::BaudRate9600: return 9600;
+    case AbstractSerial::BaudRate14400: return 14400;
+    case AbstractSerial::BaudRate19200: return 19200;
+    case AbstractSerial::BaudRate38400: return 38400;
+    case AbstractSerial::BaudRate56000: return 56000;
+    case AbstractSerial::BaudRate57600: return 57600;
+    case AbstractSerial::BaudRate76800: return 76800;
+    case AbstractSerial::BaudRate115200: return 115200;
+    case AbstractSerial::BaudRate128000: return 128000;
+    case AbstractSerial::BaudRate230400: return 230400;
+    case AbstractSerial::BaudRate256000: return 256000;
+    case AbstractSerial::BaudRate460800: return 460800;
+    case AbstractSerial::BaudRate500000: return 500000;
+    case AbstractSerial::BaudRate576000: return 576000;
+    case AbstractSerial::BaudRate921600: return 921600;
+    case AbstractSerial::BaudRate1000000: return 1000000;
+    case AbstractSerial::BaudRate1152000: return 1152000;
+    case AbstractSerial::BaudRate1500000: return 1500000;
+    case AbstractSerial::BaudRate2000000: return 2000000;
+    case AbstractSerial::BaudRate2500000: return 2500000;
+    case AbstractSerial::BaudRate3000000: return 3000000;
+    case AbstractSerial::BaudRate3500000: return 3500000;
+    case AbstractSerial::BaudRate4000000: return 4000000;
+    default:;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    return -1;
 }
 
 /*! \~english
-    \fn bool AbstractSerial::setOutputBaudRate(BaudRate baudRate)
-    Set the serial device only outbound speed \a baudRate.
-    In Windows, this method always returns \a false since independent outgoing speed is not supported.
-    \param[in] baudRate Desired outbound speed serial device ( see. AbstractSerial::BaudRate ).
-    \return \a False in case of error.
-*/
-bool AbstractSerial::setOutputBaudRate(BaudRate baudRate)
-{
-    Q_D(AbstractSerial);
-    if (this->isOpen()) {
-        bool ret = d->serialEngine->setOutputBaudRate(baudRate);
-        (ret) ? this->emitStatusString(ENoneSetBaudRate) : this->emitStatusString(ESetBaudRate);
-        return ret;
-    }
-    emitStatusString(EDeviceIsNotOpen);
-    return false;
-}
-
-/*! \~english
-    \fn bool AbstractSerial::setBaudRate(const QString &baudRate)
+    \fn bool AbstractSerial::setBaudRate(BaudRate baudRate, BaudRateDirection baudDir)
     \overload
-    \n Sets the serial device, the speed \a baudRate:
-    - In Windows, this method sets only one type of speed.
-    - In *. nix this method sets the incoming and outgoing speed of the same.
-    .
-    \param[in] baudRate Desired speed of the serial device as QString.
+    Set the desired speed \a baudRate corresponding to directions \a baudDir.
+    \note In the *.nix can be set separately for the rate of transmission and reception,
+    in Windows is impossible and the method returns an error
+    (ie Windows supported only \a AllBaud direction type).
+    \param[in] baudRate Desired speed of the serial device as BaudRate.
+    \param[in] baudDir Baud rate direction.
     \return \a False in case of error.
 */
-bool AbstractSerial::setBaudRate(const QString &baudRate)
+bool AbstractSerial::setBaudRate(BaudRate baudRate, BaudRateDirection baudDir)
 {
-    Q_D(AbstractSerial);
-    AbstractSerial::BaudRate res = d->m_baudRateMap.key(baudRate, AbstractSerial::BaudRateUndefined);
-    if (AbstractSerial::BaudRateUndefined == res) {
-#if defined (ABSTRACTSERIAL_DEBUG)
-    qDebug() << "AbstractSerial::setBaudRate(const QString &baudRate) \n"
-                " -> returned: false because input parameter speed:" <<  baudRate << "\n is not defined in QMap. Error!";
-#endif
-        this->emitStatusString(ESetBaudRate);
-        return false;
+    return this->setBaudRate(baud_type_to_int_value(baudRate), baudDir);
+}
+
+/*
+    Separates from the string (eg "9600 baud ") speed, and tries to convert this value to qint32.
+    On error, returns -1.
+*/
+static qint32 baud_string_to_int_value(const QString &baud)
+{
+    qint32 result = -1;
+    QRegExp re("(\\d+)");
+    if (baud.contains(re)) {
+        QString s = re.cap(1);
+        bool ok = false;
+        result = qint32(s.toInt(&ok));
+        if (!ok)
+            result = -1;
     }
-    return this->setBaudRate(BaudRate(res));
+    return result;
 }
 
 /*! \~english
-    \fn bool AbstractSerial::setInputBaudRate(const QString &baudRate)
+    \fn bool AbstractSerial::setBaudRate(const QString &baudRate, BaudRateDirection baudDir)
     \overload
-    \n Set the serial device only incoming speed \a baudRate.
-    In Windows, this method always returns \a false since independent member rate is not supported.
-    \param[in] baudRate Desired incoming speed serial device as QString.
+    Set the desired speed \a baudRate corresponding to directions \a baudDir.
+    \note In the *.nix can be set separately for the rate of transmission and reception,
+    in Windows is impossible and the method returns an error
+    (ie Windows supported only \a AllBaud direction type).
+    \param[in] baudRate Desired speed of the serial device as QString (ie "9600", "9600 baud", "bla 115200 blabla").
+    \param[in] baudDir Baud rate direction.
     \return \a False in case of error.
 */
-bool AbstractSerial::setInputBaudRate(const QString &baudRate)
+bool AbstractSerial::setBaudRate(const QString &baudRate, BaudRateDirection baudDir)
 {
-    Q_D(AbstractSerial);
-    AbstractSerial::BaudRate res = d->m_baudRateMap.key(baudRate, AbstractSerial::BaudRateUndefined);
-    if (AbstractSerial::BaudRateUndefined == res) {
-#if defined (ABSTRACTSERIAL_DEBUG)
-    qDebug() << "AbstractSerial::setInputBaudRate(const QString &baudRate) \n"
-                " -> returned: false because input parameter speed:" <<  baudRate << "\n is not defined in QMap. Error!";
-#endif
-        this->emitStatusString(ESetBaudRate);
-        return false;
-    }
-    return this->setInputBaudRate(BaudRate(res));
+    return this->setBaudRate(baud_string_to_int_value(baudRate), baudDir);
 }
 
 /*! \~english
-    \fn bool AbstractSerial::setOutputBaudRate(const QString &baudRate)
-    \overload
-    \n Set the serial device only outbound speed \a baudRate.
-    In Windows, this method always returns \a false since independent outgoing speed is not supported.
-    \param[in] baudRate Desired outbound speed serial device as QString.
-    \return \a False in case of error.
-*/
-bool AbstractSerial::setOutputBaudRate(const QString &baudRate)
-{
-    Q_D(AbstractSerial);
-    AbstractSerial::BaudRate res = d->m_baudRateMap.key(baudRate, AbstractSerial::BaudRateUndefined);
-    if (AbstractSerial::BaudRateUndefined == res) {
-#if defined (ABSTRACTSERIAL_DEBUG)
-    qDebug() << "AbstractSerial::setOutputBaudRate(const QString &baudRate) \n"
-                " -> returned: false because input parameter speed:" <<  baudRate << "\n is not defined in QMap. Error!";
-#endif
-        this->emitStatusString(ESetBaudRate);
-        return false;
-    }
-    return this->setOutputBaudRate(BaudRate(res));
-}
-
-/*! \~english
-    \fn QString AbstractSerial::baudRate() const
-    Returns the current baud rate is configured with a serial device.
+    \fn QString AbstractSerial::baudRate(BaudRateDirection baudDir) const
+    Returns the current baud rate corresponding to directions \a baudDir is configured with a serial device.
+    If the speed is unavailable or error, then return "Undefined baud".
+    \param[in] baudDir Baud rate direction.
     \return Speed as QString.
 */
-QString AbstractSerial::baudRate() const
+QString AbstractSerial::baudRate(BaudRateDirection baudDir) const
 {
     Q_D(const AbstractSerial);
-    return (this->isValid()) ?
-            d->m_baudRateMap.value(d->serialEngine->baudRate()) :
-            d->m_baudRateMap.value(AbstractSerial::BaudRateUndefined);
-}
-
-/*! \~english
-    \fn QString AbstractSerial::inputBaudRate() const
-    Returns the current incoming speed with which the serial device is configured.
-    \return Speed as QString.
-*/
-QString AbstractSerial::inputBaudRate() const
-{
-    Q_D(const AbstractSerial);
-    return (this->isValid()) ?
-            d->m_baudRateMap.value(d->serialEngine->inputBaudRate()) :
-            d->m_baudRateMap.value(AbstractSerial::BaudRateUndefined);
-}
-
-/*! \~english
-    \fn QString AbstractSerial::outputBaudRate() const
-    Returns the current outbound speed with which the serial device is configured.
-    \return Speed as QString.
-*/
-QString AbstractSerial::outputBaudRate() const
-{
-    Q_D(const AbstractSerial);
-    return (this->isValid()) ?
-            d->m_baudRateMap.value(d->serialEngine->outputBaudRate()) :
-            d->m_baudRateMap.value(AbstractSerial::BaudRateUndefined);
+    QString result(d->m_baudRateMap.value(AbstractSerial::BaudRateUndefined));
+    if (d->serialEngine) {
+        qint32 value = d->serialEngine->baudRate(baudDir);
+        if (value > 0)
+            result = QString(tr("%1 baud")).arg(value);
+    }
+    return result;
 }
 
 /*! \~english
@@ -835,19 +962,20 @@ QMap<AbstractSerial::BaudRate, QString> AbstractSerial::baudRateMap() const
 /*! \~english
     \fn bool AbstractSerial::setDataBits(DataBits dataBits)
     Sets the serial device number of bits of data \a dataBits.
-    \param[in] dataBits Desired number of data bits serial device ( see. AbstractSerial::DataBits ).
+    \param[in] dataBits Desired number of data bits serial device (see. AbstractSerial::DataBits).
     \return \a False in case of error.
 */
 bool AbstractSerial::setDataBits(DataBits dataBits)
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        bool ret = d->serialEngine->setDataBits(dataBits);
-        (ret) ? this->emitStatusString(ENoneSetDataBits) : this->emitStatusString(ESetDataBits);
-        return ret;
+        ret = d->serialEngine->setDataBits(dataBits);
+        status = (ret) ? ENoneSetDataBits : ESetDataBits;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
 /*! \~english
@@ -860,16 +988,8 @@ bool AbstractSerial::setDataBits(DataBits dataBits)
 bool AbstractSerial::setDataBits(const QString &dataBits)
 {
     Q_D(const AbstractSerial);
-    AbstractSerial::DataBits res = d->m_dataBitsMap.key(dataBits, AbstractSerial::DataBitsUndefined);
-    if (AbstractSerial::DataBitsUndefined == res) {
-#if defined (ABSTRACTSERIAL_DEBUG)
-    qDebug() << "AbstractSerial::setDataBits(const QString &dataBits) \n"
-                " -> returned: false because input parameter databits:" <<  dataBits << "\n is not defined in QMap. Error!";
-#endif
-        this->emitStatusString(ESetDataBits);
-        return false;
-    }
-    return this->setDataBits(DataBits(res));
+    AbstractSerial::DataBits val = d->m_dataBitsMap.key(dataBits, AbstractSerial::DataBitsUndefined);
+    return this->setDataBits(val);
 }
 
 /*! \~english
@@ -880,9 +1000,10 @@ bool AbstractSerial::setDataBits(const QString &dataBits)
 QString AbstractSerial::dataBits() const
 {
     Q_D(const AbstractSerial);
-    return (this->isValid()) ?
-            d->m_dataBitsMap.value(d->serialEngine->dataBits()) :
-            d->m_dataBitsMap.value(AbstractSerial::DataBitsUndefined);
+    AbstractSerial::DataBits val = AbstractSerial::DataBitsUndefined;
+    if (d->serialEngine)
+        val = d->serialEngine->dataBits();
+    return d->m_dataBitsMap.value(val);
 }
 
 /*! \~english
@@ -911,19 +1032,20 @@ QMap<AbstractSerial::DataBits, QString> AbstractSerial::dataBitsMap() const
 /*! \~english
     \fn bool AbstractSerial::setParity(Parity parity)
     Sets the serial device type of parity \a parity.
-    \param[in] parity Desired type of parity serial device ( see. AbstractSerial::Parity ).
+    \param[in] parity Desired type of parity serial device (see. AbstractSerial::Parity).
     \return \a False in case of error.
 */
 bool AbstractSerial::setParity(Parity parity)
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        bool ret = d->serialEngine->setParity(parity);
-        (ret) ? this->emitStatusString(ENoneSetParity) : this->emitStatusString(ESetParity);
-        return ret;
+        ret = d->serialEngine->setParity(parity);
+        status = (ret) ? ENoneSetParity : ESetParity;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
 /*! \~english
@@ -936,16 +1058,8 @@ bool AbstractSerial::setParity(Parity parity)
 bool AbstractSerial::setParity(const QString &parity)
 {
     Q_D(const AbstractSerial);
-    AbstractSerial::Parity res = d->m_parityMap.key(parity, AbstractSerial::ParityUndefined);
-    if (AbstractSerial::ParityUndefined == res) {
-#if defined (ABSTRACTSERIAL_DEBUG)
-    qDebug() << "AbstractSerial::setParity(const QString &parity) \n"
-                " -> returned: false because input parameter parity:" <<  parity << "\n is not defined in QMap. Error!";
-#endif
-        this->emitStatusString(ESetParity);
-        return false;
-    }
-    return this->setParity(Parity(res));
+    AbstractSerial::Parity val = d->m_parityMap.key(parity, AbstractSerial::ParityUndefined);
+    return this->setParity(val);
 }
 
 /*! \~english
@@ -956,9 +1070,10 @@ bool AbstractSerial::setParity(const QString &parity)
 QString AbstractSerial::parity() const
 {
     Q_D(const AbstractSerial);
-    return (this->isValid()) ?
-        d->m_parityMap.value(d->serialEngine->parity()) :
-        d->m_parityMap.value(AbstractSerial::ParityUndefined);
+    AbstractSerial::Parity val = AbstractSerial::ParityUndefined;
+    if (d->serialEngine)
+        val = d->serialEngine->parity();
+    return d->m_parityMap.value(val);
 }
 
 /*! \~english
@@ -987,19 +1102,20 @@ QMap<AbstractSerial::Parity, QString> AbstractSerial::parityMap() const
 /*! \~english
     \fn bool AbstractSerial::setStopBits(StopBits stopBits)
     Set the serial device number of stop bits \a stopBits.
-    \param[in] stopBits The desired number of stop bits serial device ( see. AbstractSerial::StopBits ).
+    \param[in] stopBits The desired number of stop bits serial device (see. AbstractSerial::StopBits).
     \return \a False in case of error.
 */
 bool AbstractSerial::setStopBits(StopBits stopBits)
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        bool ret = d->serialEngine->setStopBits(stopBits);
-        (ret) ? this->emitStatusString(ENoneSetStopBits) : this->emitStatusString(ESetStopBits);
-        return ret;
+        ret = d->serialEngine->setStopBits(stopBits);
+        status = (ret) ? ENoneSetStopBits : ESetStopBits;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
 /*! \~english
@@ -1012,16 +1128,8 @@ bool AbstractSerial::setStopBits(StopBits stopBits)
 bool AbstractSerial::setStopBits(const QString &stopBits)
 {
     Q_D(const AbstractSerial);
-    AbstractSerial::StopBits res = d->m_stopBitsMap.key(stopBits, AbstractSerial::StopBitsUndefined);
-    if (AbstractSerial::StopBitsUndefined == res) {
-#if defined (ABSTRACTSERIAL_DEBUG)
-    qDebug() << "AbstractSerial::setStopBits(const QString &stopBits) \n"
-                " -> returned: false because input parameter stopbits:" <<  stopBits << "\n is not defined in QMap. Error!";
-#endif
-        this->emitStatusString(ESetStopBits);
-        return false;
-    }
-    return this->setStopBits(StopBits(res));
+    AbstractSerial::StopBits val = d->m_stopBitsMap.key(stopBits, AbstractSerial::StopBitsUndefined);
+    return this->setStopBits(val);
 }
 
 /*! \~english
@@ -1032,9 +1140,10 @@ bool AbstractSerial::setStopBits(const QString &stopBits)
 QString AbstractSerial::stopBits() const
 {
     Q_D(const AbstractSerial);
-    return (this->isValid()) ?
-        d->m_stopBitsMap.value(d->serialEngine->stopBits()) :
-        d->m_stopBitsMap.value(AbstractSerial::StopBitsUndefined);
+    AbstractSerial::StopBits val = AbstractSerial::StopBitsUndefined;
+    if (d->serialEngine)
+        val = d->serialEngine->stopBits();
+    return d->m_stopBitsMap.value(val);
 }
 
 /*! \~english
@@ -1063,19 +1172,20 @@ QMap<AbstractSerial::StopBits, QString> AbstractSerial::stopBitsMap() const
 /*! \~english
     \fn bool AbstractSerial::setFlowControl(Flow flow)
     Sets the serial device control mode flow \a flow.
-    \param[in] flow Desired type of flow control serial devices ( see. AbstractSerial::Flow ).
+    \param[in] flow Desired type of flow control serial devices (see. AbstractSerial::Flow).
     \return \a False in case of error.
 */
 bool AbstractSerial::setFlowControl(Flow flow)
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        bool ret = d->serialEngine->setFlowControl(flow);
-        (ret) ? this->emitStatusString(ENoneSetFlow) : this->emitStatusString(ESetFlowControl);
-        return ret;
+        ret = d->serialEngine->setFlowControl(flow);
+        status = (ret) ? ENoneSetFlow : ESetFlowControl;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
 /*! \~english
@@ -1088,16 +1198,8 @@ bool AbstractSerial::setFlowControl(Flow flow)
 bool AbstractSerial::setFlowControl(const QString &flow)
 {
     Q_D(const AbstractSerial);
-    AbstractSerial::Flow res = d->m_flowMap.key(flow, AbstractSerial::FlowControlUndefined);
-    if (AbstractSerial::FlowControlUndefined == res) {
-#if defined (ABSTRACTSERIAL_DEBUG)
-    qDebug() << "AbstractSerial::setFlowControl(const QString &flow) \n"
-                " -> returned false because input parameter flow:" <<  flow << "\n is not defined in QMap. Error!";
-#endif
-        this->emitStatusString(ESetFlowControl);
-        return false;
-    }
-    return this->setFlowControl(Flow(res));
+    AbstractSerial::Flow val = d->m_flowMap.key(flow, AbstractSerial::FlowControlUndefined);
+    return this->setFlowControl(val);
 }
 
 /*! \~english
@@ -1108,9 +1210,10 @@ bool AbstractSerial::setFlowControl(const QString &flow)
 QString AbstractSerial::flowControl() const
 {
     Q_D(const AbstractSerial);
-    return (this->isValid()) ?
-        d->m_flowMap.value(d->serialEngine->flow()) :
-        d->m_flowMap.value(AbstractSerial::FlowControlUndefined);
+    AbstractSerial::Flow val = AbstractSerial::FlowControlUndefined;
+    if (d->serialEngine)
+        val = d->serialEngine->flow();
+    return d->m_flowMap.value(val);
 }
 
 /*! \~english
@@ -1137,33 +1240,65 @@ QMap<AbstractSerial::Flow, QString> AbstractSerial::flowControlMap() const
  }
 
 /*! \~english
-    \fn bool AbstractSerial::setCharIntervalTimeout(int msecs)
-    Sets the waiting time of arrival of the character in the receive buffer serial device.
-    \param[in] msecs Desired time of waiting the arrival of a character, in milliseconds.
-    \return \a False in case of error.
+    \fn void AbstractSerial::setCharIntervalTimeout(int usecs)
+    Sets the maximum time allowed to elapse between the arrival of two bytes on the communications line.
+    By default it value is 0.
+    \note Use only for Unbuffered mode!
+    \param[in] usecs Desired time, in microseconds.
 */
-bool AbstractSerial::setCharIntervalTimeout(int msecs)
+void AbstractSerial::setCharIntervalTimeout(int usecs)
 {
     Q_D(AbstractSerial);
-    if (this->isOpen()) {
-        bool ret = d->serialEngine->setCharIntervalTimeout(msecs);
-        (ret) ? this->emitStatusString(ENoneSetCharTimeout) : this->emitStatusString(ESetCharIntervalTimeout);
-        return ret;
-    }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    if (this->isOpen())
+        d->serialEngine->setCharReadTimeout(usecs);
+    else
+        this->emitStatusString(EDeviceIsNotOpen);
 }
 
 /*! \~english
     \fn int AbstractSerial::charIntervalTimeout() const
-    Returns the current waiting time of arrival of the character
-    in the receive buffer serial device with which it is configured.
-    \return The waiting time of arrival character, in milliseconds.
+    Returns the current maximum time allowed to elapse between the arrival of two bytes on the communications line.
+    \return The time, in microseconds.
 */
 int AbstractSerial::charIntervalTimeout() const
 {
     Q_D(const AbstractSerial);
-    return (this->isValid()) ? d->serialEngine->charIntervalTimeout() : 0;
+    return (d->serialEngine) ? d->serialEngine->charReadTimeout() : 0;
+}
+
+/*! \~english
+    \fn void AbstractSerial::setTotalReadConstantTimeout(int msecs)
+    Sets a constant used to calculate the total time-out period for read operations.
+    By default it value is 0.
+    \note The behavior of reading will depend on the input parameter \a msecs value:
+    - If 0 then the read operation will return immediately
+    - If -1 then the class itself will automatically recalculate the value of a
+    constant interval readings depending on the speed, data bits, stop bits, parity bit
+    - If another value then it will be installed
+    .
+    \note Use only for Unbuffered mode!
+    \note Not supported in *.nix, ignore (use only for Windows).
+    \param[in] msecs Desired time, in milliseconds.
+*/
+void AbstractSerial::setTotalReadConstantTimeout(int msecs)
+{
+    Q_D(AbstractSerial);
+    if (this->isOpen())
+        d->serialEngine->setTotalReadConstantTimeout(msecs);
+    else
+        this->emitStatusString(EDeviceIsNotOpen);
+}
+
+/*! \~english
+    \fn int AbstractSerial::totalReadConstantTimeout() const
+    Returns the current a constant used to calculate the total time-out period for read operations.
+    \return The time, in milliseconds.
+    \note In *.nix returned always 0.
+*/
+int AbstractSerial::totalReadConstantTimeout() const
+{
+    Q_D(const AbstractSerial);
+    return (d->serialEngine) ? d->serialEngine->totalReadConstantTimeout() : 0;
 }
 
 /*! \~english
@@ -1175,13 +1310,14 @@ int AbstractSerial::charIntervalTimeout() const
 bool AbstractSerial::setDtr(bool set)
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        bool ret = d->serialEngine->setDtr(set);
-        (ret) ? this->emitStatusString(ENoneSetDtr) : this->emitStatusString(ESetDtr);
-        return ret;
+        ret = d->serialEngine->setDtr(set);
+        status = (ret) ? ENoneSetDtr : ESetDtr;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
 /*! \~english
@@ -1193,13 +1329,14 @@ bool AbstractSerial::setDtr(bool set)
 bool AbstractSerial::setRts(bool set)
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        bool ret = d->serialEngine->setRts(set);
-        (ret) ? this->emitStatusString(ENoneSetRts) : this->emitStatusString(ESetRts);
-        return ret;
+        ret = d->serialEngine->setRts(set);
+        status = (ret) ? ENoneSetRts : ESetRts;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
 /*! \~english
@@ -1212,13 +1349,12 @@ quint16 AbstractSerial::lineStatus()
 {
     Q_D(AbstractSerial);
     quint16 ret = AbstractSerial::LineErr;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
         ret = d->serialEngine->lineStatus();
-        if (AbstractSerial::LineErr & ret)
-            this->emitStatusString(ELineStatus);
-        return ret;
+        status = (LineErr & ret) ? ELineStatus : ENoneLineStatus;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
+    this->emitStatusString(status);
     return ret;
 }
 
@@ -1236,16 +1372,14 @@ quint16 AbstractSerial::lineStatus()
 bool AbstractSerial::sendBreak(int duration)
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        if (duration < 0)
-            duration = 0;
-        bool ret = d->serialEngine->sendBreak(duration);
-        if (!ret)
-            this->emitStatusString(ESendBreak);
-        return ret;
+        ret = d->serialEngine->sendBreak((duration < 0) ? 0 : duration);
+        status = (ret) ? ENoneSendBreak : ESendBreak;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
 /*! \~english
@@ -1261,14 +1395,14 @@ bool AbstractSerial::sendBreak(int duration)
 bool AbstractSerial::setBreak(bool set)
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        bool ret = d->serialEngine->setBreak(set);
-        if (!ret)
-            this->emitStatusString(ESetBreak);
-        return ret;
+        ret = d->serialEngine->setBreak(set);
+        status = (ret) ? ENoneSetBreak : ESetBreak;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
 /*! \~english
@@ -1279,14 +1413,14 @@ bool AbstractSerial::setBreak(bool set)
 bool AbstractSerial::flush()
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        bool ret = d->serialEngine->flush();
-        if (!ret)
-            this->emitStatusString(EFlush);
-        return ret;
+        ret = (d->flush() || d->serialEngine->flush());
+        status = (ret) ? ENoneFlush : EFlush;
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
 /*! \~english
@@ -1297,13 +1431,16 @@ bool AbstractSerial::flush()
 bool AbstractSerial::reset()
 {
     Q_D(AbstractSerial);
+    bool ret = false;
+    AbstractSerial::Status status = EDeviceIsNotOpen;
     if (this->isOpen()) {
-        bool ret = d->serialEngine->reset();
-        d->emittedReadyRead = false;
-        return ret;
+        d->clearBuffers();
+        ret = d->serialEngine->reset();
+        status = (ret) ? ENoneReset : EReset;
+        d->emittedReadyRead = false;//????
     }
-    this->emitStatusString(EDeviceIsNotOpen);
-    return false;
+    this->emitStatusString(status);
+    return ret;
 }
 
 /*! \~english
@@ -1315,8 +1452,19 @@ bool AbstractSerial::reset()
 qint64 AbstractSerial::bytesAvailable() const
 {
     Q_D(const AbstractSerial);
-    return (this->isOpen()) ?
-            d->serialEngine->bytesAvailable() : qint64(-1);
+    qint64 available = QIODevice::bytesAvailable();
+    if (d->isBuffered)
+        available += qint64(d->readBuffer.size());
+    else
+        available += d->serialEngine->bytesAvailable();
+    return available;
+}
+
+/*! reimpl */
+qint64 AbstractSerial::bytesToWrite() const
+{
+    Q_D(const AbstractSerial);
+    return qint64(d->writeBuffer.size());
 }
 
 /*
@@ -1325,7 +1473,7 @@ qint64 AbstractSerial::bytesAvailable() const
 */
 static int qt_timeout_value(int msecs, int elapsed)
 {
-    if ( -1 == msecs ) { return msecs; }
+    if (-1 == msecs) { return msecs; }
     msecs -= elapsed;
     return (msecs < 0) ? 0 : msecs;
 }
@@ -1346,23 +1494,36 @@ bool AbstractSerial::waitForReadyRead(int msecs)
         return false;
     }
 
+    if (d->isBuffered && (!d->readBuffer.isEmpty()))
+        return true;
+
+    if (d->serialEngine && d->serialEngine->isReadNotificationEnabled())
+        d->serialEngine->setReadNotificationEnabled(false);
+
+#if QT_VERSION >= 0x040700
+    QElapsedTimer stopWatch;
+#else
     QTime stopWatch;
+#endif
     stopWatch.start();
 
     forever {
         bool readyToRead = false;
         bool readyToWrite = false;
-        if (!d->serialEngine->waitForReadOrWrite(&readyToRead, &readyToWrite, true, false,
+        if (!d->serialEngine->waitForReadOrWrite(&readyToRead, &readyToWrite, true, (!d->writeBuffer.isEmpty()),
                                                  qt_timeout_value(msecs, stopWatch.elapsed()))) {
+
             this->emitStatusString(EWaitReadyReadTimeout);
             return false;
         }
         if (readyToRead) {
-            d->emittedReadyRead = false;
-            d->canReadNotification();
-            return true;
+            if (d->canReadNotification())
+                return true;
         }
+        if (readyToWrite)
+            d->canWriteNotification();
     }
+    return false;
 }
 
 /*! \~english
@@ -1372,7 +1533,41 @@ bool AbstractSerial::waitForReadyRead(int msecs)
 */
 bool AbstractSerial::waitForBytesWritten(int msecs)
 {
-    Q_UNUSED(msecs)
+    Q_D(AbstractSerial);
+    if (!this->isOpen()) {
+        this->emitStatusString(EDeviceIsNotOpen);
+        return false;
+    }
+
+    if (d->isBuffered && d->writeBuffer.isEmpty())
+        return false;
+
+#if QT_VERSION >= 0x040700
+    QElapsedTimer stopWatch;
+#else
+    QTime stopWatch;
+#endif
+    stopWatch.start();
+
+    forever {
+        bool readyToRead = false;
+        bool readyToWrite = false;
+        if (!d->serialEngine->waitForReadOrWrite(&readyToRead, &readyToWrite, true, (!d->writeBuffer.isEmpty()),
+                                                 qt_timeout_value(msecs, stopWatch.elapsed()))) {
+
+            this->emitStatusString(EWaitReadyWriteTimeout);
+            return false;
+        }
+        if (readyToRead) {
+            if(!d->canReadNotification())
+                return false;
+        }
+        if (readyToWrite) {
+            if (d->canWriteNotification()) {
+                return true;
+            }
+        }
+    }
     return false;
 }
 
@@ -1389,213 +1584,14 @@ void AbstractSerial::enableEmitStatus(bool enable)
     d->emittedStatus = enable;
 }
 
-/*! \~english
-    \fn qint64 AbstractSerial::read(char *data, qint64 maxSize)
-    Reads from the serial device \a maxSize bytes of data in the buffer \a data.
-    \param[out] data Pointer to an array (buffer) which will read the data.
-    \param[in] maxSize The length of the data that we want to read.
-    \return Number of actual bytes read or -1 if an error occurs.
-*/
-qint64 AbstractSerial::read(char *data, qint64 maxSize)
-{
-    Q_D(AbstractSerial);
-    qint64 ret = -1;
-    if (!this->isOpen()) {
-        this->emitStatusString(EDeviceIsNotOpen);
-        return ret;
-    }
-
-    if ( AbstractSerial::WriteOnly == d->serialEngine->openMode() )
-        return ret;
-
-    ret = d->serialEngine->read(data, maxSize);
-    if (ret < 0)
-        this->emitStatusString(EReadDataIO);
-
-    d->emittedReadyRead = false;
-    return ret;
-}
-
-/*! \~english
-    \fn QByteArray AbstractSerial::read(qint64 maxSize)
-    \overload
-    \n Reads from the serial device \a maxSize bytes of data and
-    returns the result as a QByteArray.\n
-    This method does not report error, ie If the method returns an empty QByteArray
-    it means that there was a bug or no data to read.
-    \return An array of data as QByteArray.
-*/
-QByteArray AbstractSerial::read(qint64 maxSize)
-{
-    Q_D(AbstractSerial);
-    QByteArray result;
-    if (!this->isOpen()) {
-        this->emitStatusString(EDeviceIsNotOpen);
-        return result;
-    }
-
-    if ( AbstractSerial::WriteOnly == d->serialEngine->openMode() )
-        return result;
-
-    /* TODO: What else is there to limit maxSize (qint64) to the size of INT_MAX (see. limits.h)?
-       ...
-       ...
-    */
-    for (;;) {
-        qint64 bytesToRead = qMin<qint64>(ABSTRACTSERIAL_READ_CHUNK_SIZE, maxSize);
-        qint64 ret = d->serialEngine->read(d->rxChunkBuffer, bytesToRead);
-        if (ret < 0) {
-            this->emitStatusString(EReadDataIO);
-            result.clear();
-            break;
-        }
-        if (ret > 0) {
-            result.append(d->rxChunkBuffer, int(ret));
-            if (ret < bytesToRead)
-                break;
-            maxSize -= ret;
-            if ( 0 == maxSize )
-                break;
-        }
-        else
-            break;
-    }
-    d->emittedReadyRead = false;
-    return result;
-}
-
-/*! \~english
-    \fn QByteArray AbstractSerial::readAll()
-    \overload
-    \n Reads from the serial device, all available data and returns
-    result as QByteArray.\n
-This method does not report error, ie If the method returns an empty QByteArray
-    it means that there was a bug or no data to read.
-    \return An array of data as QByteArray.
-*/
-QByteArray AbstractSerial::readAll()
-{
-    Q_D(AbstractSerial);
-    QByteArray result;
-    if (!this->isOpen()) {
-        this->emitStatusString(EDeviceIsNotOpen);
-        return result;
-    }
-
-    if ( AbstractSerial::WriteOnly == d->serialEngine->openMode() )
-        return result;
-
-    // Size is unknown, read incrementally.
-    for (;;) {
-        qint64 ret = d->serialEngine->read(d->rxChunkBuffer, ABSTRACTSERIAL_READ_CHUNK_SIZE);
-
-        if (ret < 0) {
-            this->emitStatusString(EReadDataIO);
-            result.clear();
-            break;
-        }
-        if (ret > 0)
-            result.append(d->rxChunkBuffer, int(ret));
-        else
-            break;
-    }
-
-    d->emittedReadyRead = false;
-    return result;
-}
-
-/*! \~english
-    \fn qint64 AbstractSerial::write(const char *data, qint64 maxSize)
-    Writes to the serial device \a maxSize bytes of data from the buffer \a data.
-    \param[in] data Pointer to an array (buffer) from which the data will be write.
-    \param[in] maxSize The length of the data that we want to write.
-    \return Number of bytes actually written or -1 in case of error.
-*/
-qint64 AbstractSerial::write(const char *data, qint64 maxSize)
-{
-    Q_D(AbstractSerial);
-    qint64 ret = -1;
-    if (!this->isOpen()) {
-        this->emitStatusString(EDeviceIsNotOpen);
-        return ret;
-    }
-
-    if ( AbstractSerial::ReadOnly == d->serialEngine->openMode() )
-        return ret;
-
-    ret = d->serialEngine->write(data, maxSize);
-    if (ret < 0)
-        this->emitStatusString(EWriteDataIO);
-    else
-        emit this->bytesWritten(ret);
-    return ret;
-}
-
-/*! \~english
-    \fn qint64 AbstractSerial::write(const char *data)
-    \overload
-    \n Writes to the serial device data as a null-terminated
-    line 8-bit characters from the buffer \a data. \n
-    This is equivalent to:
-    \code
-    ...
-    AbstractSerial::write(data, qstrlen(data));
-    ...
-    \endcode
-    \param[in] data Pointer to the buffer from which data will be write.
-    \return Number of bytes actually written or -1 in case of error.
-*/
-qint64 AbstractSerial::write(const char *data)
-{
-    Q_D(AbstractSerial);
-    qint64 ret = -1;
-    if (!this->isOpen()) {
-        this->emitStatusString(EDeviceIsNotOpen);
-        return ret;
-    }
-
-    if ( AbstractSerial::ReadOnly == d->serialEngine->openMode() )
-        return ret;
-
-    ret = d->serialEngine->write(data, qstrlen(data));
-    if (ret < 0)
-        this->emitStatusString(EWriteDataIO);
-    else
-        emit this->bytesWritten(ret);
-    return ret;
-}
-
-/*! \~english
-    \fn qint64 AbstractSerial::write(const QByteArray &byteArray)
-    \overload
-    \n Writes to the serial device content \a byteArray.
-    \return Number of bytes actually written or -1 in case of error.
-*/
-qint64 AbstractSerial::write(const QByteArray &byteArray)
-{
-    Q_D(AbstractSerial);
-    qint64 ret = -1;
-    if (!this->isOpen()) {
-        this->emitStatusString(EDeviceIsNotOpen);
-        return ret;
-    }
-
-    if ( AbstractSerial::ReadOnly == d->serialEngine->openMode() )
-        return ret;
-
-    ret = d->serialEngine->write(byteArray.data(), byteArray.size());
-    if (ret < 0)
-        this->emitStatusString(EWriteDataIO);
-    else
-        emit this->bytesWritten(ret);
-    return ret;
-}
-
 void AbstractSerial::emitStatusString(Status status)
 {
     Q_D(const AbstractSerial);
+    QString s = d->statusToString(status);
+    if (int(status) > 31)
+        this->setErrorString(s);
     if (this->canEmitStatusString())
-        emit this->signalStatus(d->statusToString(status), QDateTime::currentDateTime());
+        emit this->signalStatus(s, QDateTime::currentDateTime());
 }
 
 /*! \~english
@@ -1611,68 +1607,124 @@ bool AbstractSerial::canEmitStatusString() const
     return d->emittedStatus;
 }
 
-/*! \~english
-    \fn bool AbstractSerial::isValid() const
-*/
-bool AbstractSerial::isValid() const
+// While not tested.
+qint64 AbstractSerial::readBufferSize() const
 {
-    Q_D(const AbstractSerial);
-    return ( 0 != d->serialEngine );
+    return d_func()->readBufferMaxSize;
 }
 
-/*! \~english
-    \fn void AbstractSerial::readyRead()
-    This signal is emitted once at arrival in the receiving buffer
-    serial device at least one byte. Ie if you did "connect" to this signal after
-    the reception buffer serial device data come then your slot,
-    not run for as signal is rejected.
-    Therefore, "connect" it is desirable to do before you open a port!
-    In order to signal once again gave up the need to read data from serial device
-    or reset (clear) buffer serial device.\n
+// While not tested.
+void AbstractSerial::setReadBufferSize(qint64 size)
+{
+    Q_D(AbstractSerial);
 
-    Example:
-    \code
-    //constructor
-    MyClass::MyClass(QObject *parent)
-    {
-        ..
-        port = new AbstractSerial(this);
-        ..
-        //here set device name
-        ..
-        //< here to do "connect" is recommended (before the opening)
-        connect( port, SIGNAL(readyRead()), this, SLOT(readDataSlot()) );
-        ..
+    if (d->readBufferMaxSize == size)
+        return;
+    d->readBufferMaxSize = size;
+    if ((!d->readSerialNotifierCalled) && d->serialEngine) {
+        if ((0 == size) || (d->readBuffer.size() < size))
+            d->serialEngine->setReadNotificationEnabled(true);
+    }
+}
 
-        //here open port
-        port->open(mode);
+/*! reimpl */
+bool AbstractSerial::isSequential() const
+{
+    return true;
+}
 
-        //< here to do "connect" is not recommended (after the opening)
-        ..
-        //here configure port
-        ..
-     }
+/*! reimpl */
+qint64 AbstractSerial::readData(char *data, qint64 maxSize)
+{
+    Q_D(AbstractSerial);
 
-     //slot
-     void MyClass::readDataSlot()
-     {
-        ..
-        QByteArray data = port->readAll();
-        ..
-     }
-    \endcode
-*/
+    if (!this->isOpen()) {
+        this->emitStatusString(EDeviceIsNotOpen);
+        return -1;
+    }
 
-/*! \~english
-    \fn void AbstractSerial::readyWrite()
-    This signal is emitted when the transmitter clipboard is empty and the transmitter can send data.
-*/
+    if (!this->isReadable()) {
+        this->emitStatusString(EReadDataIO);
+        return -1;
+    }
 
-/*! \~english
-    \fn void AbstractSerial::bytesWritten(qint64 bytes)
-    This signal is emitted in a successful write to the serial device.
-    \param[out] bytes Number of bytes that are actually write to serial device.
-*/
+    if (d->serialEngine && !d->serialEngine->isReadNotificationEnabled() && d->isBuffered)
+        d->serialEngine->setReadNotificationEnabled(true);
+
+    if (!d->isBuffered) {
+        qint64 readBytes = d->serialEngine->read(data, maxSize);
+        if (readBytes < 0)
+            this->emitStatusString(EReadDataIO);
+
+        //if (!d->serialEngine->isReadNotificationEnabled())
+        //    d->serialEngine->setReadNotificationEnabled(true);
+        return readBytes;
+    }
+
+    if (d->readBuffer.isEmpty())
+        return qint64(0);
+
+    // If readFromSerial() read data, copy it to its destination.
+    if (1 == maxSize) {
+        *data = d->readBuffer.getChar();
+        return 1;
+    }
+
+    qint64 bytesToRead = qMin(qint64(d->readBuffer.size()), maxSize);
+    qint64 readSoFar = 0;
+    while (readSoFar < bytesToRead) {
+        const char *ptr = d->readBuffer.readPointer();
+        int bytesToReadFromThisBlock = qMin(int(bytesToRead - readSoFar),
+                                            d->readBuffer.nextDataBlockSize());
+        memcpy(data + readSoFar, ptr, bytesToReadFromThisBlock);
+        readSoFar += bytesToReadFromThisBlock;
+        d->readBuffer.free(bytesToReadFromThisBlock);
+    }
+    return readSoFar;
+}
+
+/*! reimpl */
+qint64 AbstractSerial::writeData(const char *data, qint64 maxSize)
+{
+    Q_D(AbstractSerial);
+
+    if (!this->isOpen()) {
+        this->emitStatusString(EDeviceIsNotOpen);
+        return -1;
+    }
+
+    if (!this->isWritable()) {
+        this->emitStatusString(EWriteDataIO);
+        return -1;
+    }
+
+    if (!d->isBuffered) {
+        qint64 written = d->serialEngine->write(data, maxSize);
+        if (written < 0) {
+            this->emitStatusString(EWriteDataIO);
+        } else if (!d->writeBuffer.isEmpty()) {
+            d->serialEngine->setWriteNotificationEnabled(true);
+        }
+
+        if (written >= 0)
+            emit bytesWritten(written);
+        return written;
+    }
+
+     char *ptr = d->writeBuffer.reserve(maxSize);
+    if (1 == maxSize)
+        *ptr = *data;
+    else
+        memcpy(ptr, data, maxSize);
+
+    qint64 written = maxSize;
+
+    if (!d->writeBuffer.isEmpty())
+        d->serialEngine->setWriteNotificationEnabled(true);
+
+    return written;
+}
+
 
 /*! \~english
     \fn void AbstractSerial::exception();
@@ -1716,7 +1768,7 @@ bool AbstractSerial::isValid() const
         ..
         port = new AbstractSerial(this);
         ..
-        connect( port, SIGNAL(signalStatus(const QString &, QDateTime)), this, SLOT(viewStateSlot(QString &, QDateTime)) );
+        connect(port, SIGNAL(signalStatus(const QString &, QDateTime)), this, SLOT(viewStateSlot(QString &, QDateTime)));
         ..
         //here set device name
         ..
@@ -1738,21 +1790,13 @@ bool AbstractSerial::isValid() const
 
 #ifndef QT_NO_DEBUG_STREAM
 
-QDebug operator<<(QDebug debug, AbstractSerial::OpenMode value)
+/*
+QDebug operator<<(QDebug debug, quint32 value)
 {
-    debug << "OpenMode(";
-    QString s;
-    switch (value) {
-    case AbstractSerial::NotOpen: s = QLatin1String("NotOpen"); break;
-    case AbstractSerial::ReadOnly: s = QLatin1String("ReadOnly"); break;
-    case AbstractSerial::WriteOnly: s = QLatin1String("WriteOnly"); break;
-    case AbstractSerial::ReadWrite: s = QLatin1String("ReadWrite"); break;
-    }
-    debug << s;
-    debug << ')';
+    debug << "BaudRate(" << value << ")";
     return debug;
 }
-
+*/
 QDebug operator<<(QDebug debug, AbstractSerial::BaudRate value)
 {
     debug << "BaudRate(";
@@ -1794,6 +1838,7 @@ QDebug operator<<(QDebug debug, AbstractSerial::BaudRate value)
     case AbstractSerial::BaudRate3000000: s = QLatin1String("3000000"); break;
     case AbstractSerial::BaudRate3500000: s = QLatin1String("3500000"); break;
     case AbstractSerial::BaudRate4000000: s = QLatin1String("4000000"); break;
+    default:;
     }
     debug << s;
     debug << ')';
@@ -1810,6 +1855,7 @@ QDebug operator<<(QDebug debug, AbstractSerial::DataBits value)
     case AbstractSerial::DataBits6: s = QLatin1String("6"); break;
     case AbstractSerial::DataBits7: s = QLatin1String("7"); break;
     case AbstractSerial::DataBits8: s = QLatin1String("8"); break;
+    default:;
     }
     debug << s;
     debug << ')';
@@ -1827,6 +1873,7 @@ QDebug operator<<(QDebug debug, AbstractSerial::Parity value)
     case AbstractSerial::ParityEven: s = QLatin1String("Even"); break;
     case AbstractSerial::ParityMark: s = QLatin1String("Mark"); break;
     case AbstractSerial::ParitySpace: s = QLatin1String("Space"); break;
+    default:;
     }
     debug << s;
     debug << ')';
@@ -1842,6 +1889,7 @@ QDebug operator<<(QDebug debug, AbstractSerial::StopBits value)
     case AbstractSerial::StopBits1: s = QLatin1String("1"); break;
     case AbstractSerial::StopBits1_5: s = QLatin1String("1.5"); break;
     case AbstractSerial::StopBits2: s = QLatin1String("2"); break;
+    default:;
     }
     debug << s;
     debug << ')';
@@ -1857,6 +1905,7 @@ QDebug operator<<(QDebug debug, AbstractSerial::Flow value)
     case AbstractSerial::FlowControlOff: s = QLatin1String("Off"); break;
     case AbstractSerial::FlowControlHardware: s = QLatin1String("Hardware"); break;
     case AbstractSerial::FlowControlXonXoff: s = QLatin1String("Xon/Xoff"); break;
+    default:;
     }
     debug << s;
     debug << ')';

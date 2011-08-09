@@ -57,13 +57,13 @@ it is possible to solve the transition to CMake*/
 
 #endif
 
-#include "../qcore_unix_p.h"
+#include "qcore_unix_p.h"
 #include "ttylocker.h"
 
 TTYLocker::TTYLocker()
         : m_descriptor(-1)
 {
-#if !( defined (HAVE_BAUDBOY_H) || defined (HAVE_LOCKDEV_H) )
+#if !(defined (HAVE_BAUDBOY_H) || defined (HAVE_LOCKDEV_H))
     this->lockDirList
             << "/var/lock"
             << "/etc/locks"
@@ -100,11 +100,11 @@ bool TTYLocker::lock() const
 {
     bool result = false;
 #if defined (HAVE_BAUDBOY_H)
-    if ( ::ttylock(this->shortName().toLocal8Bit().constData()) )
+    if (::ttylock(this->shortName().toLocal8Bit().constData()))
         ::ttywait(this->shortName().toLocal8Bit().constData());
-    result = ( ::ttylock(this->shortName().toLocal8Bit().constData()) != -1 );
+    result = (::ttylock(this->shortName().toLocal8Bit().constData()) != -1);
 #elif defined (HAVE_LOCKDEV_H)
-    result = ( ::dev_lock(this->shortName().toLocal8Bit().constData()) != -1 );
+    result = (::dev_lock(this->shortName().toLocal8Bit().constData()) != -1);
 #else
     result = this->m_lock();
 #endif
@@ -120,9 +120,9 @@ bool TTYLocker::unlock() const
 {
     bool result = false;
 #if defined (HAVE_BAUDBOY_H)
-    result = ( ::ttyunlock(this->shortName().toLocal8Bit().constData()) != -1 );
+    result = (::ttyunlock(this->shortName().toLocal8Bit().constData()) != -1);
 #elif defined (HAVE_LOCKDEV_H)
-    result = ( ::dev_unlock(this->shortName().toLocal8Bit().constData(), ::getpid()) != -1 );
+    result = (::dev_unlock(this->shortName().toLocal8Bit().constData(), ::getpid()) != -1);
 #else
     result = this->m_unlock();
 #endif
@@ -140,10 +140,10 @@ bool TTYLocker::locked(bool *lockedByCurrentPid) const
 {
     bool result = false;
 #if defined (HAVE_BAUDBOY_H)
-    result = ( ::ttylocked(this->shortName().toLocal8Bit().constData()) != -1 );
+    result = (::ttylocked(this->shortName().toLocal8Bit().constData()) != -1);
     *lockedByCurrentPid = false;
 #elif defined (HAVE_LOCKDEV_H)
-    result = ( ::dev_testlock(this->shortName().toLocal8Bit().constData()) != -1 );
+    result = (::dev_testlock(this->shortName().toLocal8Bit().constData()) != -1);
     *lockedByCurrentPid = false;
 #else
     result = this->m_locked(lockedByCurrentPid);
@@ -151,7 +151,7 @@ bool TTYLocker::locked(bool *lockedByCurrentPid) const
     return result;
 }
 
-#if !( defined (HAVE_BAUDBOY_H) || defined (HAVE_LOCKDEV_H) )
+#if !(defined (HAVE_BAUDBOY_H) || defined (HAVE_LOCKDEV_H))
 
 /* Returns the name of the lock file, which is tied to the major and minor device number,
     eg "LCK.30.50" etc. */
@@ -213,7 +213,7 @@ int TTYLocker::checkPid(int pid) const
         }
         break;
     default:
-        ( ::getpid() == pid ) ?
+        (::getpid() == pid) ?
                 ret = 2 : ret = 1;
     }
     return ret;
@@ -292,7 +292,7 @@ bool TTYLocker::m_lock() const
 
         int fd = qt_safe_open(f.toLocal8Bit().constData(), flags, mode);
 
-        if ( -1 == fd ) {
+        if (-1 == fd) {
             result = false;
             break;
         }
@@ -301,7 +301,7 @@ bool TTYLocker::m_lock() const
         f = "     %1 %2\x0A";
         f = f.arg(::getpid()).arg(::getuid());
 
-        if ( -1 == qt_safe_write(fd, (const void *)f.toLocal8Bit().constData(), f.length()) )
+        if (-1 == qt_safe_write(fd, (const void *)f.toLocal8Bit().constData(), f.length()))
             result = false;
 
         qt_safe_close(fd);
@@ -320,7 +320,7 @@ bool TTYLocker::m_lock() const
 QString TTYLocker::getFirstSharedLockDir() const
 {
     foreach (QString result, this->lockDirList) {
-        if ( 0 == ::access(result.toLocal8Bit().constData(), (R_OK | W_OK)) )
+        if (0 == ::access(result.toLocal8Bit().constData(), (R_OK | W_OK)))
             return result;
     }
     return QString();

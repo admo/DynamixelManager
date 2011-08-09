@@ -4,11 +4,19 @@
 #include "nativeserialengine.h"
 #include "abstractserialengine_p.h"
 
-#ifdef Q_OS_WIN
+#if defined (Q_OS_WIN)
   #include <qt_windows.h>
 #else
   #include <termios.h>
   #include "ttylocker.h"
+#endif
+
+#ifndef READ_CHUNKSIZE
+#define READ_CHUNKSIZE Q_INT64_C(256)
+#endif
+
+#ifndef WRITE_CHUNKSIZE
+#define WRITE_CHUNKSIZE Q_INT64_C(512)
 #endif
 
 class AbstractSerialNotifier;
@@ -20,14 +28,17 @@ public:
     bool nativeOpen(AbstractSerial::OpenMode mode);
     bool nativeClose();
 
-    bool nativeSetBaudRate(AbstractSerial::BaudRate baudRate);
-    bool nativeSetInputBaudRate(AbstractSerial::BaudRate baudRate);
-    bool nativeSetOutputBaudRate(AbstractSerial::BaudRate baudRate);
+    bool nativeSetBaudRate(qint32 baudRate, AbstractSerial::BaudRateDirection baudDir);
     bool nativeSetDataBits(AbstractSerial::DataBits dataBits);
     bool nativeSetParity(AbstractSerial::Parity parity);
     bool nativeSetStopBits(AbstractSerial::StopBits stopBits);
     bool nativeSetFlowControl(AbstractSerial::Flow flow);
-    bool nativeSetCharIntervalTimeout(int msecs);
+
+    void nativeSetCharReadTimeout(int usecs);
+    int nativeCharReadTimeout() const;
+
+    void nativeSetTotalReadConstantTimeout(int msecs);
+    int nativeTotalReadConstantTimeout() const;
 
     bool nativeSetDtr(bool set) const;
     bool nativeSetRts(bool set) const;
@@ -50,43 +61,48 @@ public:
     //add 05.11.2009  (while is not used, reserved)
     qint64 nativeCurrentQueue(NativeSerialEngine::ioQueue queue) const;
 
-    inline bool isValid() const;
-
     AbstractSerialNotifier *notifier;
 
 private:
 
 #ifdef Q_OS_WIN
-  #if defined (USE_COMMCONFIG)
-    ::COMMCONFIG cc, oldcc;
-  #else
+
+    enum CommTimeouts {
+        ReadIntervalTimeout, ReadTotalTimeoutMultiplier,
+        ReadTotalTimeoutConstant, WriteTotalTimeoutMultiplier,
+        WriteTotalTimeoutConstant
+    };
     ::DCB dcb, olddcb;
-  #endif
     ::COMMTIMEOUTS ct, oldct;
-    ::OVERLAPPED oRx;
-    ::OVERLAPPED oTx;
+    ::OVERLAPPED oRead;
+    ::OVERLAPPED oWrite;
     ::OVERLAPPED oSelect;
 
     bool createEvents(bool rx, bool tx);
     bool closeEvents() const;
+    void recalcTotalReadTimeoutConstant();
+    void prepareCommTimeouts(CommTimeouts cto, ::DWORD msecs);
+    bool updateDcb();
+    bool updateCommTimeouts();
 #else
     struct termios tio;
     struct termios oldtio;
     TTYLocker locker;
+    void prepareTimeouts(int msecs);
+    bool updateTermious();
+    bool setStandartBaud(AbstractSerial::BaudRateDirection, speed_t speed);
+    bool setCustomBaud(qint32 speed);
 #endif
+
+    void initVariables();
 
     bool detectDefaultBaudRate();
     bool detectDefaultDataBits();
     bool detectDefaultParity();
     bool detectDefaultStopBits();
     bool detectDefaultFlowControl();
-
     bool detectDefaultCurrentSettings();
-
-    bool setDefaultAsyncCharTimeout();
-
     void prepareOtherOptions();
-
     bool saveOldSettings();
     bool restoreOldSettings();
 };

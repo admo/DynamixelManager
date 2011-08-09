@@ -21,8 +21,6 @@ SelectSerialPortDialog::SelectSerialPortDialog(QWidget *parent) :
 					this, SLOT(listOfSerialDevicesChanged(QStringList)));
 	serialDeviceEnumerator->setEnabled(true);
 
-
-
 	connect(m_ui->buttonBox, SIGNAL(accepted()), this, SLOT(openDeviceEmit()));
 
 	TRI_LOG_STR("Out SelectSerialPortDialog::SelectSerialPortDialog(QWidget");

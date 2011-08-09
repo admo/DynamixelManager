@@ -75,11 +75,11 @@ private slots:
 	void firstControlTableRAMUpdated(const DynamixelControlTableRAM*);
 
 	/* Zakładka Operation */
-	void torqueEnabled();
-	void ledEnabled();
-	void speedChanged(int);
-	void stopMovement();
-	void positionChanged(int);
+	void torqueEnabled();               // Włącz/Wyłącz moment na silniku
+	void ledEnabled();                  // Włącz/Wyłącz diodę
+	void speedChanged(int);             // Zmień prędkość serwa
+	void stopMovement();                // Zatrzymaj serwo
+	void positionChanged(int);          // Zmień pozycję srwa
 	void pwmControlActivated(int);
 	void pwmCWMarginChanged(int);
 	void pwmCCWMarginChanged(int);

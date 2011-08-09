@@ -43,7 +43,7 @@ private:
 
     QString shortName() const;
 
-#if !( defined (HAVE_BAUDBOY_H) || defined (HAVE_LOCKDEV_H) )
+#if !(defined (HAVE_BAUDBOY_H) || defined (HAVE_LOCKDEV_H))
 
     QString getLockFileInNumericForm() const;
     QString getLockFileInNamedForm() const;

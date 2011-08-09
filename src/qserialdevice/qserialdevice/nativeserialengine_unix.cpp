@@ -22,61 +22,18 @@
 */
 
 #include <QtCore/QDir>
-//#include <QtCore/QAbstractEventDispatcher>
 
-//TODO: How to connect source file ../src/corelib/kernel/qcore_unix_p.h ?
-#include "../qcore_unix_p.h"
+#include "qcore_unix_p.h"
 
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
 
-#include "nativeserialengine_p.h"
-
-//experimental speed defines
 #if defined (Q_OS_LINUX)
-  #if !defined (B230400)
-    #define B230400  0010003
-  #endif
-  #if !defined (B460800)
-    #define B460800  0010004
-  #endif
-  #if !defined (B500000)
-    #define B500000  0010005
-  #endif
-  #if !defined (B576000)
-    #define B576000  0010006
-  #endif
-  #if !defined (B921600)
-    #define B921600  0010007
-  #endif
-  #if !defined (B1000000)
-    #define B1000000 0010010
-  #endif
-  #if !defined (B1152000)
-    #define B1152000 0010011
-  #endif
-  #if !defined (B1500000)
-    #define B1500000 0010012
-  #endif
-  #if !defined (B2000000)
-    #define B2000000 0010013
-  #endif
-  #if !defined (B2500000)
-    #define B2500000 0010014
-  #endif
-  #if !defined (B3000000)
-    #define B3000000 0010015
-  #endif
-  #if !defined (B3500000)
-    #define B3500000 0010016
-  #endif
-  #if !defined (B4000000)
-    #define B4000000 0010017
-  #endif
-#else //Q_OS_LINUX
- //while empty
+  #include <linux/serial.h>
 #endif
+
+#include "nativeserialengine_p.h"
 
 //#define NATIVESERIALENGINE_UNIX_DEBUG
 
@@ -87,32 +44,15 @@
 
 NativeSerialEnginePrivate::NativeSerialEnginePrivate()
 {
-    ::memset((void *)(&this->tio), 0, sizeof(this->tio));
-    ::memset((void *)(&oldtio), 0, sizeof(oldtio));
-
-    this->notifier = 0;
-    this->descriptor = -1;
-    this->deviceName = this->defaultDeviceName;
-    //
-    this->openMode = AbstractSerial::NotOpen;
-    this->status = AbstractSerial::ENone;
-    this->oldSettingsIsSaved = false;
+    this->initVariables();
 }
 
-bool NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode)
+bool NativeSerialEnginePrivate::nativeOpen(QIODevice::OpenMode mode)
 {
-    if (this->isValid())  {
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode) \n"
-                " -> The device is already open or other error. Error! \n";
-#endif
-        return false;
-    }
-
     //here chek locked device or not
     this->locker.setDeviceName(this->deviceName);
     bool byCurrPid = false;
-    if ( this->locker.locked(&byCurrPid) ) {
+    if (this->locker.locked(&byCurrPid)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug() << "Linux: NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode) \n"
                 " -> can not open the device:" << this->deviceName <<
@@ -121,21 +61,13 @@ bool NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode)
         return false;
     }
 
-    int flags = ( O_NOCTTY | O_NDELAY );
-    switch (mode) {
-    case AbstractSerial::ReadOnly:
-        flags |= ( O_RDONLY ); break;
-    case AbstractSerial::WriteOnly:
-        flags |= ( O_WRONLY ); break;
-    case AbstractSerial::ReadWrite:
-        flags |= ( O_RDWR ); break;
-    default:
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode) \n"
-                " -> mode: " << mode << " undefined. Error! \n";
-#endif
-        return false;
-    }//switch
+    int flags = (O_NOCTTY | O_NDELAY);
+    switch (QIODevice::ReadWrite & mode) {
+    case QIODevice::ReadOnly: flags |= (O_RDONLY); break;
+    case QIODevice::WriteOnly: flags |= (O_WRONLY); break;
+    case QIODevice::ReadWrite: flags |= (O_RDWR); break;
+    default:;
+    }
 
     //try opened serial device
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
@@ -145,7 +77,7 @@ bool NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode)
 
     this->descriptor = qt_safe_open(this->deviceName.toLocal8Bit().constData(), flags);
 
-    if (!this->isValid()) {
+    if (-1 == this->descriptor) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug() << "Linux: NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode) \n"
                 " -> function: ::open(...) returned: -1,"
@@ -179,22 +111,18 @@ bool NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode)
 
     //Prepare other options
     this->prepareOtherOptions();
+    this->prepareTimeouts(0);
 
-    if (!this->setDefaultAsyncCharTimeout()) {
+    if (!this->updateTermious()) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug() << "Linux: NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode) \n"
-                " -> function: setDefaultAsyncCharTimeout() returned: false. Error! \n";
+                " -> function: ::updateTermious() returned: false. Error! \n";
 #endif
         return false;
     }
 
-    if ( -1 == ::tcsetattr(this->descriptor, TCSANOW, &this->tio) ) {
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode) \n"
-                " -> function: ::tcsetattr(this->descriptor), TCSANOW, &this->tio) returned: -1. Error! \n";
-#endif
-        return false;
-    }
+    // Disable autocalculate total read interval.
+    this->isAutoCalcReadTimeoutConstant = false;
 
     if (!this->detectDefaultCurrentSettings()) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
@@ -209,26 +137,20 @@ bool NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode)
             " -> opened device: " << this->deviceName << " in mode: " << mode << " succesfully. Ok! \n";
 #endif
 
-    this->openMode = mode;
     return true;
 }
 
 bool NativeSerialEnginePrivate::nativeClose()
 {
-    if (!this->isValid()) {
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug("Linux: NativeSerialEnginePrivate::nativeClose() \n"
-               " -> descriptor is invalid. Error! \n");
-#endif
-        return false;
-    }
-
     //here try clean exclusive mode
 #if defined (TIOCNXCL)
     ::ioctl(this->descriptor, TIOCNXCL);
 #endif
 
     bool closeResult = true;
+
+    if (-1 == this->descriptor)
+        return closeResult;
 
     //try restore old parameters device
     if (!this->restoreOldSettings()) {
@@ -240,194 +162,217 @@ bool NativeSerialEnginePrivate::nativeClose()
     }
 
     //try closed device
-    if ( -1 == qt_safe_close(this->descriptor) ) {
+    if (-1 == qt_safe_close(this->descriptor)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeClose() \n"
                " -> function: ::close(this->descriptor) returned: -1. Error! \n");
 #endif
-        closeResult = false;
+        //closeResult = false;
     }
 
     //here try unlock device
     this->locker.setDeviceName(this->deviceName);
     bool byCurrPid = false;
 
-    if ( this->locker.locked(&byCurrPid) && byCurrPid )
+    if (this->locker.locked(&byCurrPid) && byCurrPid)
         this->locker.unlock();
 
-    if (closeResult) {
-        this->openMode = AbstractSerial::NotOpen;
+    //if (closeResult) {
         this->descriptor = -1;
-    }
+    //}
 
     return closeResult;
 }
 
-bool NativeSerialEnginePrivate::nativeSetBaudRate(AbstractSerial::BaudRate baudRate)
+/*
+    Attempts to convert the speed in the POSIX constant speed.
+    If the system does not have the necessary constants, the function returns 0.
+*/
+static speed_t value_baud_to_nix_type_baud(qint32 baudRate)
 {
-    return ( this->nativeSetInputBaudRate(baudRate)
-             && this->nativeSetOutputBaudRate(baudRate) );
+    switch (baudRate) {
+    case 50:
+#if defined (B50)
+        return B50;
+#endif
+        break;
+    case 75:
+#if defined (B75)
+        return B75;
+#endif
+        break;
+    case 110:
+#if defined (B110)
+        return B110;
+#endif
+        break;
+    case 134:
+#if defined (B134)
+        return B134;
+#endif
+        break;
+    case 150:
+#if defined (B150)
+        return B150;
+#endif
+        break;
+    case 200:
+#if defined (B50)
+        return B50;
+#endif
+        break;
+    case 300:
+#if defined (B300)
+        return B300;
+#endif
+        break;
+    case 600:
+#if defined (B600)
+        return B600;
+#endif
+        break;
+    case 1200:
+#if defined (B1200)
+        return B1200;
+#endif
+        break;
+    case 1800:
+#if defined (B1800)
+        return B1800;
+#endif
+        break;
+    case 2400:
+#if defined (B2400)
+        return B2400;
+#endif
+        break;
+    case 4800:
+#if defined (B4800)
+        return B4800;
+#endif
+        break;
+    case 9600:
+#if defined (B9600)
+        return B9600;
+#endif
+        break;
+    case 19200:
+#if defined (B19200)
+        return B19200;
+#endif
+        break;
+    case 38400:
+#if defined (B38400)
+        return B38400;
+#endif
+        break;
+    case 57600:
+#if defined (B57600)
+        return B57600;
+#endif
+        break;
+    case 115200:
+#if defined (B115200)
+        return B115200;
+#endif
+        break;
+    case 230400:
+#if defined (B230400)
+        return B230400;
+#endif
+        break;
+    case 460800:
+#if defined (B460800)
+        return B460800;
+#endif
+        break;
+    case 500000:
+#if defined (B500000)
+        return B500000;
+#endif
+        break;
+    case 576000:
+#if defined (B576000)
+        return B576000;
+#endif
+        break;
+    case 921600:
+#if defined (B921600)
+        return B921600;
+#endif
+        break;
+    case 1000000:
+#if defined (B1000000)
+        return B1000000;
+#endif
+        break;
+    case 1152000:
+#if defined (B1152000)
+        return B1152000;
+#endif
+        break;
+    case 1500000:
+#if defined (B1500000)
+        return B1500000;
+#endif
+        break;
+    case 2000000:
+#if defined (B2000000)
+        return B2000000;
+#endif
+        break;
+    case 2500000:
+#if defined (B2500000)
+        return B50;
+#endif
+        break;
+    case 3000000:
+#if defined (B3000000)
+        return B3000000;
+#endif
+        break;
+    case 3500000:
+#if defined (B3500000)
+        return B3500000;
+#endif
+        break;
+    case 4000000:
+#if defined (B4000000)
+        return B4000000;
+#endif
+        break;
+    default:;
+    }
+    return 0;
 }
 
-bool NativeSerialEnginePrivate::nativeSetInputBaudRate(AbstractSerial::BaudRate baudRate)
+bool NativeSerialEnginePrivate::nativeSetBaudRate(qint32 baudRate, AbstractSerial::BaudRateDirection baudDir)
 {
-    speed_t br = 0;
-    switch (baudRate) {
-    case AbstractSerial::BaudRate14400:
-    case AbstractSerial::BaudRate56000:
-    case AbstractSerial::BaudRate76800:
-    case AbstractSerial::BaudRate128000:
-    case AbstractSerial::BaudRate256000:
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetInputBaudRate(AbstractSerial::BaudRate baudRate) \n"
-                " -> POSIX does not support baudRate: " << baudRate << " baud operathis->tion. Error! \n";
-#endif
-        return false;
-    case AbstractSerial::BaudRate50: br = B50; break;
-    case AbstractSerial::BaudRate75: br = B75; break;
-    case AbstractSerial::BaudRate110: br = B110; break;
-    case AbstractSerial::BaudRate134: br = B134; break;
-    case AbstractSerial::BaudRate150: br = B150; break;
-    case AbstractSerial::BaudRate200: br = B200; break;
-    case AbstractSerial::BaudRate300: br = B300; break;
-    case AbstractSerial::BaudRate600: br = B600; break;
-    case AbstractSerial::BaudRate1200: br = B1200; break;
-    case AbstractSerial::BaudRate1800: br = B1800; break;
-    case AbstractSerial::BaudRate2400: br = B2400; break;
-    case AbstractSerial::BaudRate4800: br = B4800; break;
-    case AbstractSerial::BaudRate9600: br = B9600; break;
-    case AbstractSerial::BaudRate19200: br = B19200; break;
-    case AbstractSerial::BaudRate38400: br = B38400; break;
-    case AbstractSerial::BaudRate57600: br = B57600; break;
-    case AbstractSerial::BaudRate115200: br = B115200; break;
-
-    //exp
-#if defined (Q_OS_LINUX)
-    case AbstractSerial::BaudRate230400: br = B230400; break;
-    case AbstractSerial::BaudRate460800: br = B460800; break;
-    case AbstractSerial::BaudRate500000: br = B500000; break;
-    case AbstractSerial::BaudRate576000: br = B576000; break;
-    case AbstractSerial::BaudRate921600: br = B921600; break;
-    case AbstractSerial::BaudRate1000000: br = B1000000; break;
-    case AbstractSerial::BaudRate1152000: br = B1152000; break;
-    case AbstractSerial::BaudRate1500000: br = B1500000; break;
-    case AbstractSerial::BaudRate2000000: br = B2000000; break;
-    case AbstractSerial::BaudRate2500000: br = B2500000; break;
-    case AbstractSerial::BaudRate3000000: br = B3000000; break;
-    case AbstractSerial::BaudRate3500000: br = B3500000; break;
-    case AbstractSerial::BaudRate4000000: br = B4000000; break;
-#endif
-
-    default:
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetInputBaudRate(AbstractSerial::BaudRate baudRate) \n"
-                " -> baudRate: " << baudRate << " is not supported by the class NativeSerialEnginePrivate, \n"
-                "see enum AbstractSerial::BaudRate. Error! \n";
-#endif
-        return false;
-    }//switch baudrate
-
-    if ( -1 == ::cfsetispeed(&this->tio, br) )  {
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetInputBaudRate(AbstractSerial::BaudRate baudRate) \n"
-                " -> function: ::cfsetispeed(...) returned: -1. Error! \n";
-#endif
-        return false;
+    speed_t speed = value_baud_to_nix_type_baud(baudRate);
+    if (speed > 0) {
+        if (this->setStandartBaud(baudDir, speed)) {
+            if (AbstractSerial::InputBaud & baudDir)
+                this->ibaudRate = baudRate;
+            if (AbstractSerial::OutputBaud & baudDir)
+                this->obaudRate = baudRate;
+            //this->recalcReadTimeout();
+            return true;
+        }
     }
-
-    if ( -1 == ::tcsetattr(this->descriptor, TCSANOW, &this->tio) ) {
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetInputBaudRate(AbstractSerial::BaudRate baudRate) \n"
-                " -> function: ::tcsetattr(this->descriptor, TCSANOW, &this->tio) returned: -1. Error! \n";
-#endif
-        return false;
+    else {
+        if (this->setCustomBaud(baudRate)) {
+            this->ibaudRate = this->obaudRate = baudRate;
+            //this->recalcReadTimeout();
+            return true;
+        }
     }
-
-    this->ibaudRate = baudRate;
-    return true;
-}
-
-bool NativeSerialEnginePrivate::nativeSetOutputBaudRate(AbstractSerial::BaudRate baudRate)
-{
-    speed_t br = 0;
-    switch (baudRate) {
-    case AbstractSerial::BaudRate14400:
-    case AbstractSerial::BaudRate56000:
-    case AbstractSerial::BaudRate76800:
-    case AbstractSerial::BaudRate128000:
-    case AbstractSerial::BaudRate256000:
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetOutputBaudRate(AbstractSerial::BaudRate baudRate) \n"
-                " -> POSIX does not support baudRate: " << baudRate << " baud operathis->tion. Error! \n";
-#endif
-        return false;
-    case AbstractSerial::BaudRate50: br = B50; break;
-    case AbstractSerial::BaudRate75: br = B75; break;
-    case AbstractSerial::BaudRate110: br = B110; break;
-    case AbstractSerial::BaudRate134: br = B134; break;
-    case AbstractSerial::BaudRate150: br = B150; break;
-    case AbstractSerial::BaudRate200: br = B200; break;
-    case AbstractSerial::BaudRate300: br = B300; break;
-    case AbstractSerial::BaudRate600: br = B600; break;
-    case AbstractSerial::BaudRate1200: br = B1200; break;
-    case AbstractSerial::BaudRate1800: br = B1800; break;
-    case AbstractSerial::BaudRate2400: br = B2400; break;
-    case AbstractSerial::BaudRate4800: br = B4800; break;
-    case AbstractSerial::BaudRate9600: br = B9600; break;
-    case AbstractSerial::BaudRate19200: br = B19200; break;
-    case AbstractSerial::BaudRate38400: br = B38400; break;
-    case AbstractSerial::BaudRate57600: br = B57600; break;
-    case AbstractSerial::BaudRate115200: br = B115200; break;
-
-    //exp
-#if defined (Q_OS_LINUX)
-    case AbstractSerial::BaudRate230400: br = B230400; break;
-    case AbstractSerial::BaudRate460800: br = B460800; break;
-    case AbstractSerial::BaudRate500000: br = B500000; break;
-    case AbstractSerial::BaudRate576000: br = B576000; break;
-    case AbstractSerial::BaudRate921600: br = B921600; break;
-    case AbstractSerial::BaudRate1000000: br = B1000000; break;
-    case AbstractSerial::BaudRate1152000: br = B1152000; break;
-    case AbstractSerial::BaudRate1500000: br = B1500000; break;
-    case AbstractSerial::BaudRate2000000: br = B2000000; break;
-    case AbstractSerial::BaudRate2500000: br = B2500000; break;
-    case AbstractSerial::BaudRate3000000: br = B3000000; break;
-    case AbstractSerial::BaudRate3500000: br = B3500000; break;
-    case AbstractSerial::BaudRate4000000: br = B4000000; break;
-#endif
-
-    default:
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetOutputBaudRate(AbstractSerial::BaudRate baudRate) \n"
-                " -> baudRate: " << baudRate << " is not supported by the class NativeSerialEnginePrivate, \n"
-                "see enum AbstractSerial::BaudRate. Error! \n";
-#endif
-        return false;
-    }//switch baudrate
-
-    if ( -1 == ::cfsetospeed(&this->tio, br) )  {
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetOutputBaudRate(AbstractSerial::BaudRate baudRate) \n"
-                " -> function: ::cfsetispeed(...) or function: ::cfsetospeed(...) returned: -1. Error! \n";
-#endif
-        return false;
-    }
-
-    if ( -1 == ::tcsetattr(this->descriptor, TCSANOW, &this->tio) ) {
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-        qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetOutputBaudRate(AbstractSerial::BaudRate baudRate) \n"
-                " -> function: ::tcsetattr(this->descriptor, TCSANOW, &this->tio) returned: -1. Error! \n";
-#endif
-        return false;
-    }
-    this->obaudRate = baudRate;
-    return true;
+    return false;
 }
 
 bool NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataBits)
 {
-    if ( (AbstractSerial::DataBits5 == dataBits)
-        && (AbstractSerial::StopBits2 == this->stopBits) ) {
+    if ((AbstractSerial::DataBits5 == dataBits)
+        && (AbstractSerial::StopBits2 == this->stopBits)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataBits) \n"
                " -> 5 data bits cannot be used with 2 stop bits. Error! \n");
@@ -435,8 +380,8 @@ bool NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataB
         return false;
     }
 
-    if ( (AbstractSerial::DataBits6 == dataBits)
-        && (AbstractSerial::StopBits1_5 == this->stopBits) ) {
+    if ((AbstractSerial::DataBits6 == dataBits)
+        && (AbstractSerial::StopBits1_5 == this->stopBits)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataBits) \n"
                " -> 6 data bits cannot be used with 1.5 stop bits. Error! \n");
@@ -444,8 +389,8 @@ bool NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataB
         return false;
     }
 
-    if ( (AbstractSerial::DataBits7 == dataBits)
-        && (AbstractSerial::StopBits1_5 == this->stopBits) ) {
+    if ((AbstractSerial::DataBits7 == dataBits)
+        && (AbstractSerial::StopBits1_5 == this->stopBits)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataBits) \n"
                " -> 7 data bits cannot be used with 1.5 stop bits. Error! \n");
@@ -453,8 +398,8 @@ bool NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataB
         return false;
     }
 
-    if ( (AbstractSerial::DataBits8 == dataBits)
-        && (AbstractSerial::StopBits1_5 == this->stopBits) ) {
+    if ((AbstractSerial::DataBits8 == dataBits)
+        && (AbstractSerial::StopBits1_5 == this->stopBits)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataBits) \n"
                " -> 8 data bits cannot be used with 1.5 stop bits. Error! \n");
@@ -466,8 +411,8 @@ bool NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataB
     /* This protection against the installation of parity in the absence of macro Space CMSPAR.
     (That is prohibited for any *.nix than GNU/Linux) */
 
-    if ( (AbstractSerial::ParitySpace == this->parity)
-        && (AbstractSerial::DataBits8 == dataBits) ) {
+    if ((AbstractSerial::ParitySpace == this->parity)
+        && (AbstractSerial::DataBits8 == dataBits)) {
 
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetParity(AbstractSerial::Parity parity) \n"
@@ -502,50 +447,47 @@ bool NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataB
                 "see enum AbstractSerial::DataBits. Error! \n";
 #endif
         return false;
-    }//switch dataBits
+    }
 
-    if ( -1 == ::tcsetattr(this->descriptor, TCSANOW, &this->tio) ) {
+    if (!this->updateTermious()) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetDataBits(AbstractSerial::DataBits dataBits) \n"
-                " -> function: ::tcsetattr(this->descriptor, TCSANOW, &this->tio) returned: -1. Error! \n";
+                " -> function: updateTermious() returned: false. Error! \n";
 #endif
         return false;
     }
     this->dataBits = dataBits;
+    //this->recalcReadTimeout();
     return true;
 }
 
-/*  TODO: in the future to correct method: nativeSetParity (), add  emulathis->tion mode parity Mark/Space and check CMSPAR.
-*/
 bool NativeSerialEnginePrivate::nativeSetParity(AbstractSerial::Parity parity)
 {
     switch (parity) {
-#if defined (CMSPAR)
-    /* Here Installation parity only for GNU/Linux where the macro CMSPAR
-    */
+#if defined (CMSPAR) //CMSPAR
+    // Here Installation parity only for GNU/Linux where the macro CMSPAR.
     case AbstractSerial::ParitySpace:
-        this->tio.c_cflag &= ( ~PARODD );
-        this->tio.c_cflag |= CMSPAR;
+        this->tio.c_cflag &= (~PARODD);
+        this->tio.c_cflag |= (PARENB | CMSPAR);
         break;
     case AbstractSerial::ParityMark:
-        this->tio.c_cflag |= ( CMSPAR | PARODD );
+        this->tio.c_cflag |= (PARENB | CMSPAR | PARODD);
         break;
 #else //CMSPAR
-    /* here setting parity to other *.nix.
-        TODO: check here impl!
-    */
+    // Here setting parity to other *.nix.
+    // TODO: check here impl!
     case AbstractSerial::ParitySpace:
         switch (this->dataBits) {
         case AbstractSerial::DataBits5:
-            this->tio.c_cflag &= ~( PARENB | CSIZE );
+            this->tio.c_cflag &= ~(PARENB | CSIZE);
             this->tio.c_cflag |= CS6;
             break;
         case AbstractSerial::DataBits6:
-            this->tio.c_cflag &= ~( PARENB | CSIZE );
+            this->tio.c_cflag &= ~(PARENB | CSIZE);
             this->tio.c_cflag |= CS7;
             break;
         case AbstractSerial::DataBits7:
-            this->tio.c_cflag &= ~( PARENB | CSIZE );
+            this->tio.c_cflag &= ~(PARENB | CSIZE);
             this->tio.c_cflag |= CS8;
             break;
         case AbstractSerial::DataBits8:
@@ -558,7 +500,7 @@ bool NativeSerialEnginePrivate::nativeSetParity(AbstractSerial::Parity parity)
         default: ;
         }
         break;
-        case AbstractSerial::ParityMark:
+    case AbstractSerial::ParityMark:
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetParity(AbstractSerial::Parity parity) \n"
                 " -> parity: " << parity << " is not supported by the class NativeSerialEnginePrivate, \n"
@@ -567,40 +509,41 @@ bool NativeSerialEnginePrivate::nativeSetParity(AbstractSerial::Parity parity)
         return false;
 #endif //CMSPAR
 
-        case AbstractSerial::ParityNone:
-        this->tio.c_cflag &= ( ~PARENB );
+    case AbstractSerial::ParityNone:
+        this->tio.c_cflag &= (~PARENB);
         break;
-        case AbstractSerial::ParityEven:
-        this->tio.c_cflag &= ( ~PARODD );
+    case AbstractSerial::ParityEven:
+        this->tio.c_cflag &= (~PARODD);
         this->tio.c_cflag |= PARENB;
         break;
-        case AbstractSerial::ParityOdd:
-        this->tio.c_cflag |= ( PARENB | PARODD );
+    case AbstractSerial::ParityOdd:
+        this->tio.c_cflag |= (PARENB | PARODD);
         break;
-        default:
+    default:
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetParity(AbstractSerial::Parity parity) \n"
                 " -> parity: " << parity << " is not supported by the class NativeSerialEnginePrivate, \n"
                 "see enum AbstractSerial::Parity. Error! \n";
 #endif
         return false;
-    }//switch parity
+    }
 
-    if ( -1 == ::tcsetattr(this->descriptor, TCSANOW, &this->tio) ) {
+    if (!this->updateTermious()) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetParity(AbstractSerial::Parity parity) \n"
-                " -> function: ::tcsetattr(this->descriptor, TCSANOW, &this->tio) returned: -1. Error! \n";
+                " -> function: updateTermious() returned: false. Error! \n";
 #endif
         return false;
     }
     this->parity = parity;
+    //this->recalcReadTimeout();
     return true;
 }
 
 bool NativeSerialEnginePrivate::nativeSetStopBits(AbstractSerial::StopBits stopBits)
 {
-    if ( (AbstractSerial::DataBits5 == this->dataBits)
-        && (AbstractSerial::StopBits2 == this->stopBits) ) {
+    if ((AbstractSerial::DataBits5 == this->dataBits)
+        && (AbstractSerial::StopBits2 == this->stopBits)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetStopBits(AbstractSerial::StopBits stopBits) \n"
                " -> 5 data bits cannot be used with 2 stop bits. Error! \n");
@@ -610,7 +553,7 @@ bool NativeSerialEnginePrivate::nativeSetStopBits(AbstractSerial::StopBits stopB
 
     switch (stopBits) {
     case AbstractSerial::StopBits1:
-        this->tio.c_cflag &= ( ~CSTOPB );
+        this->tio.c_cflag &= (~CSTOPB);
         break;
     case AbstractSerial::StopBits2:
         this->tio.c_cflag |= CSTOPB;
@@ -631,7 +574,7 @@ bool NativeSerialEnginePrivate::nativeSetStopBits(AbstractSerial::StopBits stopB
         return false;
     }//switch
 
-    if ( -1 == ::tcsetattr(this->descriptor, TCSANOW, &this->tio) ) {
+    if (-1 == ::tcsetattr(this->descriptor, TCSANOW, &this->tio)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetStopBits(AbstractSerial::StopBits stopBits) \n"
                 " -> function: ::tcsetattr(this->descriptor, TCSANOW, &this->tio) returned: -1. Error! \n";
@@ -639,6 +582,7 @@ bool NativeSerialEnginePrivate::nativeSetStopBits(AbstractSerial::StopBits stopB
         return false;
     }
     this->stopBits = stopBits;
+    //this->recalcReadTimeout();
     return true;
 }
 
@@ -647,7 +591,7 @@ bool NativeSerialEnginePrivate::nativeSetFlowControl(AbstractSerial::Flow flow)
     switch (flow) {
     case AbstractSerial::FlowControlOff:
         this->tio.c_cflag &= (~CRTSCTS);
-        this->tio.c_iflag &= ( ~(IXON | IXOFF | IXANY ) );
+        this->tio.c_iflag &= (~(IXON | IXOFF | IXANY));
         break;
     case AbstractSerial::FlowControlXonXoff:
         this->tio.c_cflag &= (~CRTSCTS);
@@ -655,7 +599,7 @@ bool NativeSerialEnginePrivate::nativeSetFlowControl(AbstractSerial::Flow flow)
         break;
     case AbstractSerial::FlowControlHardware:
         this->tio.c_cflag |= CRTSCTS;
-        this->tio.c_iflag &= ( ~(IXON | IXOFF | IXANY) );
+        this->tio.c_iflag &= (~(IXON | IXOFF | IXANY));
         break;
     default:
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
@@ -666,10 +610,10 @@ bool NativeSerialEnginePrivate::nativeSetFlowControl(AbstractSerial::Flow flow)
         return false;
     }//switch
 
-    if ( -1 == ::tcsetattr(this->descriptor, TCSANOW, &this->tio) ) {
+    if (!this->updateTermious()) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug() << "Linux: NativeSerialEnginePrivate::nativeSetFlowControl(AbstractSerial::Flow flow) \n"
-                " -> function: ::tcsetattr(this->descriptor, TCSANOW, &this->tio) returned: -1. Error! \n";
+                " -> function: updateTermious() returned: false. Error! \n";
 #endif
         return false;
     }
@@ -677,17 +621,33 @@ bool NativeSerialEnginePrivate::nativeSetFlowControl(AbstractSerial::Flow flow)
     return true;
 }
 
-bool NativeSerialEnginePrivate::nativeSetCharIntervalTimeout(int msecs)
+void NativeSerialEnginePrivate::nativeSetCharReadTimeout(int usecs)
 {
-    this->charIntervalTimeout = msecs;
-    return true;
+    this->charIntervalTimeout = usecs;
+}
+
+int NativeSerialEnginePrivate::nativeCharReadTimeout() const
+{
+    return this->charIntervalTimeout;
+}
+
+void NativeSerialEnginePrivate::nativeSetTotalReadConstantTimeout(int msecs)
+{
+    Q_UNUSED(msecs)
+    // Empty.
+}
+
+int NativeSerialEnginePrivate::nativeTotalReadConstantTimeout() const
+{
+    // Not support in *.nix.
+    return quint32(0);
 }
 
 bool NativeSerialEnginePrivate::nativeSetDtr(bool set) const
 {
     int status = 0;
 
-    if ( -1 == ::ioctl(this->descriptor, TIOCMGET, &status) ) {
+    if (-1 == ::ioctl(this->descriptor, TIOCMGET, &status)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetDtr(bool set) \n"
                " -> function: ::ioctl(this->descriptor, TIOCMGET, &status) returned: -1. Error! \n");
@@ -697,7 +657,7 @@ bool NativeSerialEnginePrivate::nativeSetDtr(bool set) const
 
     (set) ? status |= TIOCM_DTR : status &= (~TIOCM_DTR);
 
-    if ( -1 == ::ioctl(this->descriptor, TIOCMSET, &status) ) {
+    if (-1 == ::ioctl(this->descriptor, TIOCMSET, &status)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetDtr(bool set) \n"
                " -> function: ::ioctl(this->descriptor, TIOCMSET, &status) returned: -1. Error! \n");
@@ -711,7 +671,7 @@ bool NativeSerialEnginePrivate::nativeSetRts(bool set) const
 {
     int status = 0;
 
-    if ( -1 == ::ioctl(this->descriptor, TIOCMGET, &status) ) {
+    if (-1 == ::ioctl(this->descriptor, TIOCMGET, &status)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetRts(bool set) \n"
                " -> function: ::ioctl(this->descriptor, TIOCMGET, &status) returned: -1. Error! \n");
@@ -721,7 +681,7 @@ bool NativeSerialEnginePrivate::nativeSetRts(bool set) const
 
     (set) ? status |= TIOCM_RTS : status &= (~TIOCM_RTS);
 
-    if ( -1 == ::ioctl(this->descriptor, TIOCMSET, &status) ) {
+    if (-1 == ::ioctl(this->descriptor, TIOCMSET, &status)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetRts(bool set) \n"
                " -> function: ::ioctl(this->descriptor, TIOCMSET, &status) returned: -1. Error! \n");
@@ -736,7 +696,7 @@ quint16 NativeSerialEnginePrivate::nativeLineStatus() const
     int temp = 0;
     quint16 status = AbstractSerial::LineErr;
 
-    if ( -1 == ::ioctl(this->descriptor, TIOCMGET, &temp) ) {
+    if (-1 == ::ioctl(this->descriptor, TIOCMGET, &temp)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeLineStatus() \n"
                " -> function: ::ioctl(this->descriptor, TIOCMGET, &temp) returned: -1. Error! \n");
@@ -744,7 +704,7 @@ quint16 NativeSerialEnginePrivate::nativeLineStatus() const
         return status;
     }
 
-    status &= ~status;
+    status &= (~status);
 #if defined (TIOCM_LE)
     if (temp & TIOCM_LE) status |= AbstractSerial::LineLE;
 #endif
@@ -785,7 +745,7 @@ quint16 NativeSerialEnginePrivate::nativeLineStatus() const
 
 bool NativeSerialEnginePrivate::nativeSendBreak(int duration) const
 {
-    if ( -1 == ::tcsendbreak(this->descriptor, duration) ) {
+    if (-1 == ::tcsendbreak(this->descriptor, duration)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetRts(bool set) \n"
                " -> function: ::tcsendbreak(this->descriptor, duration) returned: -1. Error! \n");
@@ -798,7 +758,7 @@ bool NativeSerialEnginePrivate::nativeSendBreak(int duration) const
 bool NativeSerialEnginePrivate::nativeSetBreak(bool set) const
 {
     if (set) {
-        if ( -1 == ::ioctl(this->descriptor, TIOCSBRK) ) {
+        if (-1 == ::ioctl(this->descriptor, TIOCSBRK)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
             qDebug("Linux: NativeSerialEnginePrivate::nativeSetBreak(bool set) \n"
                    " -> function: ::ioctl(this->descriptor, TIOCSBRK) returned: -1. Error! \n");
@@ -808,7 +768,7 @@ bool NativeSerialEnginePrivate::nativeSetBreak(bool set) const
         return true;
     }
 
-    if ( -1 == ::ioctl(this->descriptor, TIOCCBRK) ) {
+    if (-1 == ::ioctl(this->descriptor, TIOCCBRK)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeSetBreak(bool set) \n"
                " -> function: ::ioctl(this->descriptor), TIOCCBRK) returned: -1. Error! \n");
@@ -820,7 +780,7 @@ bool NativeSerialEnginePrivate::nativeSetBreak(bool set) const
 
 bool NativeSerialEnginePrivate::nativeFlush() const
 {
-    if ( -1 == ::tcdrain(this->descriptor) ) {
+    if (-1 == ::tcdrain(this->descriptor)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeFlush() \n"
                " -> function: ::tcdrain(this->descriptor) returned: -1. Error! \n");
@@ -832,7 +792,7 @@ bool NativeSerialEnginePrivate::nativeFlush() const
 
 bool NativeSerialEnginePrivate::nativeReset() const
 {
-    if ( -1 == ::tcflush(this->descriptor, TCIOFLUSH) ) {
+    if (-1 == ::tcflush(this->descriptor, TCIOFLUSH)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
         qDebug("Linux: NativeSerialEnginePrivate::nativeReset() \n"
                " -> function: ::tcflush(this->descriptor, TCIOFLUSH) returned: -1. Error! \n");
@@ -847,9 +807,9 @@ qint64 NativeSerialEnginePrivate::nativeBytesAvailable() const
     size_t nbytes = 0;
     //TODO: whether there has been done to build a multi-platform *.nix. (FIONREAD) ?
 #if defined (FIONREAD)
-    if ( -1 == ::ioctl(this->descriptor, FIONREAD, &nbytes) )
+    if (-1 == ::ioctl(this->descriptor, FIONREAD, &nbytes))
 #else
-    if ( -1 == ::ioctl(this->descriptor, TIOCINQ, &nbytes) )
+    if (-1 == ::ioctl(this->descriptor, TIOCINQ, &nbytes))
 #endif
     {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
@@ -863,10 +823,7 @@ qint64 NativeSerialEnginePrivate::nativeBytesAvailable() const
 
 qint64 NativeSerialEnginePrivate::nativeWrite(const char *data, qint64 len)
 {
-    ssize_t bytesWritten = 0;
-    do {
-        bytesWritten = qt_safe_write(this->descriptor, (const void *)data, (size_t)len);
-    } while ( (bytesWritten < 0) && (EINTR == errno) );
+    ssize_t bytesWritten = qt_safe_write(this->descriptor, (const void *)data, (size_t)len);
 
     this->nativeFlush();
 
@@ -899,12 +856,43 @@ qint64 NativeSerialEnginePrivate::nativeWrite(const char *data, qint64 len)
     return quint64(bytesWritten);
 }
 
+//FIXME
 qint64 NativeSerialEnginePrivate::nativeRead(char *data, qint64 len)
 {
+    /*
+        WARNING!!!
+
+        Here, I was not able to implement blocking read-through setting termios
+        (see explanation in prepareTimeouts()).
+
+        Need to implement a reading with this algorithm:
+
+        1. If the timeout interval of the symbol is greater than 0, then waiting to read this character.
+        2. If the timeout interval of the symbol 0, then return the reading immediately!
+
+        So I had to use ::select(). Other solution I have found.
+
+    */
     ssize_t bytesReaded = 0;
+
+    QTime readDelay;
+    readDelay.start();
+
+    bool sfr = false;
+    bool sfw = false;
+
+    int msecs = this->charIntervalTimeout / 1000;
+
     do {
-        bytesReaded = qt_safe_read(this->descriptor, (void*)data, len);
-    } while ( (-1 == bytesReaded) && (EINTR == errno) );
+        ssize_t readFromDevice = qt_safe_read(this->descriptor, (void*)data, len - bytesReaded);
+        if (readFromDevice < 0) {
+            bytesReaded = readFromDevice;
+            break;
+        }
+        bytesReaded += readFromDevice;
+
+    } while ((msecs > 0) && (this->nativeSelect(msecs, true, false, &sfr, &sfw) > 0) && (bytesReaded < len));
+
 
     if (bytesReaded < 0) {
         bytesReaded = -1;
@@ -929,7 +917,7 @@ qint64 NativeSerialEnginePrivate::nativeRead(char *data, qint64 len)
         case EPIPE:
 #endif
         case ECONNRESET:
-#if defined(Q_OS_VXWORKS)
+#if defined (Q_OS_VXWORKS)
         case ESHUTDOWN:
 #endif
             bytesReaded = 0;
@@ -982,91 +970,151 @@ qint64 NativeSerialEnginePrivate::nativeCurrentQueue(NativeSerialEngine::ioQueue
     return qint64(-1);
 }
 
-bool NativeSerialEnginePrivate::isValid() const
+void NativeSerialEnginePrivate::initVariables()
 {
-    return ( -1 != this->descriptor );
+    ::memset((void *)(&this->tio), 0, sizeof(this->tio));
+    ::memset((void *)(&oldtio), 0, sizeof(oldtio));
+
+    this->notifier = 0;
+    this->descriptor = -1;
+    this->deviceName = this->defaultDeviceName;
+    //
+    this->status = AbstractSerial::ENone;
+    this->oldSettingsIsSaved = false;
 }
 
 /* Defines a parameter - the current baud rate of default,
    which can be obtained only after the open of the device (port).
-   Used only in method: NativeSerialEnginePrivate::detectDefaultCurrentSettings()
+   Used only in method: NativeSerialEnginePrivate::detectDefaultCurrentSettings().
+   Always return true!!!
 */
 bool NativeSerialEnginePrivate::detectDefaultBaudRate()
 {
     //TODO: ??
     for (int i = 0; i < 2; ++i) {
-        AbstractSerial::BaudRate *pBR = 0;
+        qint32 *pspeed =  0;
         speed_t result = 0;
-
         switch (i) {
         case 0:
-            pBR = &this->ibaudRate;
+            pspeed = &this->ibaudRate;
             result = ::cfgetispeed(&this->tio);
             break;
         case 1:
-            pBR = &this->obaudRate;
+            pspeed = &this->obaudRate;
             result = ::cfgetospeed(&this->tio);
             break;
-        default: return false;
+        default: result = 0;
         }
 
         switch (result) {
-        case B50: *pBR = AbstractSerial::BaudRate50; break;
-        case B75: *pBR = AbstractSerial::BaudRate75; break;
-        case B110: *pBR = AbstractSerial::BaudRate110; break;
-        case B134: *pBR = AbstractSerial::BaudRate134; break;
-        case B150: *pBR = AbstractSerial::BaudRate150; break;
-        case B200: *pBR = AbstractSerial::BaudRate200; break;
-        case B300: *pBR = AbstractSerial::BaudRate300; break;
-        case B600: *pBR = AbstractSerial::BaudRate600; break;
-        case B1200: *pBR = AbstractSerial::BaudRate1200; break;
-        case B1800: *pBR = AbstractSerial::BaudRate1800; break;
-        case B2400: *pBR = AbstractSerial::BaudRate2400; break;
-        case B4800: *pBR = AbstractSerial::BaudRate4800; break;
-        case B9600: *pBR = AbstractSerial::BaudRate9600; break;
-        case B19200: *pBR = AbstractSerial::BaudRate19200; break;
-        case B38400: *pBR = AbstractSerial::BaudRate38400; break;
-        case B57600: *pBR = AbstractSerial::BaudRate57600; break;
-        case B115200: *pBR = AbstractSerial::BaudRate115200;  break;
-        //exp
-#if defined (Q_OS_LINUX)
-        case B230400: *pBR = AbstractSerial::BaudRate230400;  break;
-        case B460800: *pBR = AbstractSerial::BaudRate460800;  break;
-        case B500000: *pBR = AbstractSerial::BaudRate500000;  break;
-        case B576000: *pBR = AbstractSerial::BaudRate576000;  break;
-        case B921600: *pBR = AbstractSerial::BaudRate921600;  break;
-        case B1000000: *pBR = AbstractSerial::BaudRate1000000;  break;
-        case B1152000: *pBR = AbstractSerial::BaudRate1152000;  break;
-        case B1500000: *pBR = AbstractSerial::BaudRate1500000;  break;
-        case B2000000: *pBR = AbstractSerial::BaudRate2000000;  break;
-        case B2500000: *pBR = AbstractSerial::BaudRate2500000;  break;
-        case B3000000: *pBR = AbstractSerial::BaudRate3000000;  break;
-        case B3500000: *pBR = AbstractSerial::BaudRate3500000;  break;
-        case B4000000: *pBR = AbstractSerial::BaudRate4000000;  break;
+#if defined (B50)
+        case B50: *pspeed = 50; break;
 #endif
-
+#if defined (B75)
+        case B75: *pspeed = 75; break;
+#endif
+#if defined (B110)
+        case B110: *pspeed = 110; break;
+#endif
+#if defined (B134)
+        case B134: *pspeed = 134; break;
+#endif
+#if defined (B150)
+        case B150: *pspeed = 150; break;
+#endif
+#if defined (B200)
+        case B200: *pspeed = 200; break;
+#endif
+#if defined (B300)
+        case B300: *pspeed = 300; break;
+#endif
+#if defined (B600)
+        case B600: *pspeed = 600; break;
+#endif
+#if defined (B1200)
+        case B1200: *pspeed = 1200; break;
+#endif
+#if defined (B1800)
+        case B1800: *pspeed = 1800; break;
+#endif
+#if defined (B2400)
+        case B2400: *pspeed = 2400; break;
+#endif
+#if defined (B4800)
+        case B4800: *pspeed = 4800; break;
+#endif
+#if defined (B9600)
+        case B9600: *pspeed = 9600; break;
+#endif
+#if defined (B19200)
+        case B19200: *pspeed = 19200; break;
+#endif
+#if defined (B38400)
+        case B38400: *pspeed = 38400; break;
+#endif
+#if defined (B57600)
+        case B57600: *pspeed = 57600; break;
+#endif
+#if defined (B115200)
+        case B115200: *pspeed = 115200;  break;
+#endif
+#if defined (B230400)
+        case B230400: *pspeed = 230400;  break;
+#endif
+#if defined (B460800)
+        case B460800: *pspeed = 460800;  break;
+#endif
+#if defined (B500000)
+        case B500000: *pspeed = 500000;  break;
+#endif
+#if defined (B576000)
+        case B576000: *pspeed = 576000;  break;
+#endif
+#if defined (B921600)
+        case B921600: *pspeed = 921600;  break;
+#endif
+#if defined (B1000000)
+        case B1000000: *pspeed = 1000000;  break;
+#endif
+#if defined (B1152000)
+        case B1152000: *pspeed = 1152000;  break;
+#endif
+#if defined (B1500000)
+        case B1500000: *pspeed = 1500000;  break;
+#endif
+#if defined (B2000000)
+        case B2000000: *pspeed = 2000000;  break;
+#endif
+#if defined (B2500000)
+        case B2500000: *pspeed = 2500000;  break;
+#endif
+#if defined (B3000000)
+        case B3000000: *pspeed = 3000000;  break;
+#endif
+#if defined (B3500000)
+        case B3500000: *pspeed = 3500000;  break;
+#endif
+#if defined (B4000000)
+        case B4000000: *pspeed = 4000000;  break;
+#endif
         default:
-            *pBR = AbstractSerial::BaudRateUndefined;
-#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
-            qDebug() << "Linux: NativeSerialEnginePrivate::detectDefaultBaudRate() \n"
-                    " -> function: ::cfgetispeed(&this->tio) or ::cfgetispeed(&this->tio) returned undefined baud rate: " << result << " \n";
-#endif
-            ;
+            *pspeed = -1;
         }
-        pBR = 0;
+        pspeed = 0;
     }
     return true;
 }
 
 /* Defines a parameter - the current data bits of default,
    which can be obtained only after the open of the device (port).
-   Used only in method: NativeSerialEnginePrivate::detectDefaultCurrentSettings()
+   Used only in method: NativeSerialEnginePrivate::detectDefaultCurrentSettings().
+   Always return true!!!
 */
 bool NativeSerialEnginePrivate::detectDefaultDataBits()
 {
     tcflag_t result = this->tio.c_cflag;
 
-    switch (result & CSIZE) {
+    switch (CSIZE & result) {
     case CS5:
         this->dataBits = AbstractSerial::DataBits5; break;
     case CS6:
@@ -1088,7 +1136,8 @@ bool NativeSerialEnginePrivate::detectDefaultDataBits()
 
 /* Defines a parameter - the current parity of default,
    which can be obtained only after the open of the device (port).
-   Used only in method: NativeSerialEnginePrivate::detectDefaultCurrentSettings()
+   Used only in method: NativeSerialEnginePrivate::detectDefaultCurrentSettings().
+   Always return true!!!
 */
 bool NativeSerialEnginePrivate::detectDefaultParity()
 {
@@ -1097,32 +1146,32 @@ bool NativeSerialEnginePrivate::detectDefaultParity()
 #if defined (CMSPAR)
     /* TODO: while impl only if defined CMSPAR !!!
     */
-    if ( (result & CMSPAR)
-        && (!(result & PARODD)) ) {
+    if ((result & CMSPAR)
+        && (!(result & PARODD))) {
         this->parity = AbstractSerial::ParitySpace;
         return true;
     }
 
-    if ( (result & CMSPAR)
-        && (result & PARODD) ) {
+    if ((result & CMSPAR)
+        && (result & PARODD)) {
         this->parity = AbstractSerial::ParityMark;
         return true;
     }
 #endif
 
-    if ( !(result & PARENB) ) {
+    if (!(result & PARENB)) {
         this->parity = AbstractSerial::ParityNone;
         return true;
     }
 
-    if ( (result & PARENB)
-        && (!(result & PARODD)) ) {
+    if ((result & PARENB)
+        && (!(result & PARODD))) {
         this->parity = AbstractSerial::ParityEven;
         return true;
     }
 
-    if ( (result & PARENB)
-        && (result & PARODD) ) {
+    if ((result & PARENB)
+        && (result & PARODD)) {
         this->parity = AbstractSerial::ParityOdd;
         return true;
     }
@@ -1137,13 +1186,14 @@ bool NativeSerialEnginePrivate::detectDefaultParity()
 
 /* Defines a parameter - the current stop bits of default,
    which can be obtained only after the open of the device (port).
-   Used only in method: NativeSerialEnginePrivate::detectDefaultCurrentSettings()
+   Used only in method: NativeSerialEnginePrivate::detectDefaultCurrentSettings().
+   Always return true!!!
 */
 bool NativeSerialEnginePrivate::detectDefaultStopBits()
 {
     tcflag_t result = this->tio.c_cflag;
 
-    if ( !(result & CSTOPB) ) {
+    if (!(result & CSTOPB)) {
         this->stopBits = AbstractSerial::StopBits1;
         return true;
     }
@@ -1163,24 +1213,25 @@ bool NativeSerialEnginePrivate::detectDefaultStopBits()
 
 /* Defines a parameter - the current flow control of default,
    which can be obtained only after the open of the device (port).
-   Used only in method: NativeSerialEnginePrivate::detectDefaultCurrentSettings()
+   Used only in method: NativeSerialEnginePrivate::detectDefaultCurrentSettings().
+   Always return true!!!
 */
 bool NativeSerialEnginePrivate::detectDefaultFlowControl()
 {
-    if ( (!(this->tio.c_cflag & CRTSCTS))
-        && (!(this->tio.c_iflag & (IXON | IXOFF | IXANY))) ) {
+    if ((!(this->tio.c_cflag & CRTSCTS))
+        && (!(this->tio.c_iflag & (IXON | IXOFF | IXANY)))) {
         this->flow = AbstractSerial::FlowControlOff;
         return true;
     }
 
-    if ( (!(this->tio.c_cflag & CRTSCTS))
-        && (this->tio.c_iflag & (IXON | IXOFF | IXANY)) ) {
+    if ((!(this->tio.c_cflag & CRTSCTS))
+        && (this->tio.c_iflag & (IXON | IXOFF | IXANY))) {
         this->flow = AbstractSerial::FlowControlXonXoff;
         return true;
     }
 
-    if ( (this->tio.c_cflag & CRTSCTS)
-        && (!(this->tio.c_iflag & (IXON | IXOFF | IXANY))) ) {
+    if ((this->tio.c_cflag & CRTSCTS)
+        && (!(this->tio.c_iflag & (IXON | IXOFF | IXANY)))) {
         this->flow = AbstractSerial::FlowControlHardware;
         return true;
     }
@@ -1194,25 +1245,13 @@ bool NativeSerialEnginePrivate::detectDefaultFlowControl()
 }
 
 /* Specifies the port settings that were with him by default when you open it.
-   Used only in method: NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode)
+   Used only in method: NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode).
+   Always return true!!!
 */
 bool NativeSerialEnginePrivate::detectDefaultCurrentSettings()
 {
-    return ( this->detectDefaultBaudRate() && this->detectDefaultDataBits() && this->detectDefaultParity()
-             && this->detectDefaultStopBits() && this->detectDefaultFlowControl() );
-}
-
-/* Force sets the parameters of timeouts port for asynchronous mode.
-   Used only in method: NativeSerialEnginePrivate::nativeOpen(AbstractSerial::OpenMode mode)
-*/
-bool NativeSerialEnginePrivate::setDefaultAsyncCharTimeout()
-{
-    /* TODO:
-    here you need to specify the settings for the asynchronous mode! to check! */
-    this->tio.c_cc[VTIME] = 0;
-    this->tio.c_cc[VMIN] = 0;
-    this->charIntervalTimeout = 10; //TODO: 10 msecs is default (Reinsurance)
-    return true;
+    return (this->detectDefaultBaudRate() && this->detectDefaultDataBits() && this->detectDefaultParity()
+             && this->detectDefaultStopBits() && this->detectDefaultFlowControl());
 }
 
 /* Prepares other parameters of the structures port configurathis->tion.
@@ -1223,11 +1262,9 @@ void NativeSerialEnginePrivate::prepareOtherOptions()
     //TODO: It is necessary to check work in Mac OSX, and if you need to make changes!
     ::cfmakeraw(&this->tio);
     //control modes [c_cflag]
-    this->tio.c_cflag |= ( CREAD | CLOCAL );
+    this->tio.c_cflag |= (CREAD | CLOCAL);
     //local modes [c_lflag]
-
     //input modes [c_iflag]
-
     //output modes [c_oflag]
 }
 
@@ -1235,13 +1272,13 @@ void NativeSerialEnginePrivate::prepareOtherOptions()
 */
 bool NativeSerialEnginePrivate::saveOldSettings()
 {
-    //saved current settings to oldtio
-    if ( -1 == ::tcgetattr(this->descriptor, &this->oldtio) )
+    // Saved current settings to oldtio.
+    if (-1 == ::tcgetattr(this->descriptor, &this->oldtio))
         return false;
-    //Get configure
+    // Get configure.
     ::memcpy((void *)(&this->tio), (const void *)(&this->oldtio), sizeof(this->oldtio));
     //::memset((void *)(&this->tio), 0, sizeof(this->tio));
-    //Set flag "altered parameters is saved"
+    // Set flag "altered parameters is saved".
     this->oldSettingsIsSaved = true;
     return true;
 }
@@ -1250,7 +1287,84 @@ bool NativeSerialEnginePrivate::saveOldSettings()
 */
 bool NativeSerialEnginePrivate::restoreOldSettings()
 {
-    return ( this->oldSettingsIsSaved
-             && (-1 == ::tcsetattr(this->descriptor, TCSANOW, &this->oldtio)) ) ?
+    return (this->oldSettingsIsSaved
+            && (-1 == ::tcsetattr(this->descriptor, TCSANOW, &this->oldtio))) ?
             false : true;
+}
+
+//FIXME
+void NativeSerialEnginePrivate::prepareTimeouts(int msecs)
+{
+    Q_UNUSED(msecs)
+
+    // Only non-blocking!
+    if (this->tio.c_cc[VMIN])
+        this->tio.c_cc[VMIN] = 0;
+    if (this->tio.c_cc[VTIME])
+        this->tio.c_cc[VTIME] = 0;
+
+    //if msecs then set ::fcntl(this->descriptor, F_SETFL, 0)
+
+    /*
+        WARNING!!!
+
+        In my ArchLinux does not work blocking read mode.
+        Installing VTIME > 0 (at ::fcntl(this->descriptor, F_SETFL, 0)) does not work,
+        reading function returns immediately.
+        So I gave up a blocking read!
+        But to wait for a character I had to modify the method nativeRead() through ::select() (see nativeRead()).
+    */
+
+}
+
+bool NativeSerialEnginePrivate::updateTermious()
+{
+    return (-1 != ::tcsetattr(this->descriptor, TCSANOW, &this->tio));
+}
+
+bool NativeSerialEnginePrivate::setStandartBaud(AbstractSerial::BaudRateDirection direction, speed_t speed)
+{
+    int ret = 0;
+    switch (direction) {
+    case AbstractSerial::InputBaud: ret = ::cfsetispeed(&this->tio, speed); break;
+    case AbstractSerial::OutputBaud: ret = ::cfsetospeed(&this->tio, speed); break;
+    case AbstractSerial::AllBaud: ret = ::cfsetspeed(&this->tio, speed); break;
+    default: return false;
+    }
+    if (-1 == ret) {
+#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
+        qDebug() << "Linux: NativeSerialEnginePrivate::setStandartBaud(int direction, speed_t speed) \n"
+                " -> function: ::cfset(i/o)speed(...) returned: -1. Error! \n";
+#endif
+        return false;
+    }
+    if (!this->updateTermious()) {
+#if defined (NATIVESERIALENGINE_UNIX_DEBUG)
+        qDebug() << "Linux: NativeSerialEnginePrivate::setStandartBaud(int direction, speed_t speed) \n"
+                " -> function: updateTermious() returned: false. Error! \n";
+#endif
+        return false;
+    }
+    return true;
+}
+
+bool NativeSerialEnginePrivate::setCustomBaud(qint32 speed)
+{
+    int result = -1;
+#if defined (TIOCGSERIAL) && defined (TIOCSSERIAL)
+#if defined (Q_OS_LINUX)
+    if (speed > 0) {
+        struct serial_struct ser_info;
+        result = ::ioctl(this->descriptor, TIOCGSERIAL, &ser_info);
+        if (-1 != result) {
+            ser_info.flags &= ~ASYNC_SPD_MASK;
+            ser_info.flags |= (ASYNC_SPD_CUST /* | ASYNC_LOW_LATENCY*/);
+            ser_info.custom_divisor = ser_info.baud_base / speed;
+            if (ser_info.custom_divisor)
+                result = ::ioctl(this->descriptor, TIOCSSERIAL, &ser_info);
+        }
+    }
+#endif //Q_OS_LINUX
+#endif
+    return (-1 != result);
 }

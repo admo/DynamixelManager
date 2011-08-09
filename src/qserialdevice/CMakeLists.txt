@@ -2,11 +2,6 @@ project( QSerialDevice )
 cmake_minimum_required( VERSION 2.6.0 )
 find_package( Qt4 REQUIRED )
 
-if(UNIX)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(udev REQUIRED libudev)
-endif(UNIX)
-
 include( ${QT_USE_FILE} )
 include_directories( ${CMAKE_CURRENT_BINARY_DIR}
                      ${QT_INCLUDES} 
@@ -14,9 +9,9 @@ include_directories( ${CMAKE_CURRENT_BINARY_DIR}
 
 # LIB_INCLUDE_DIRS - pathes to the header files of the library,
 #                    this paths is cached and useful in the future to build the /examples.
-set ( QSERIALDEVICE_INCLUDE_DIRS 
-    ${CMAKE_CURRENT_SOURCE_DIR}/qserialdevice
-    ${CMAKE_CURRENT_SOURCE_DIR}/qserialdeviceenumerator
+set ( LIB_INCLUDE_DIRS 
+    ${PROJECT_SOURCE_DIR}/qserialdevice
+    ${PROJECT_SOURCE_DIR}/qserialdeviceenumerator
     CACHE string "Paths to include library headers."
 )
 
@@ -24,7 +19,7 @@ set ( QSERIALDEVICE_INCLUDE_DIRS
 #                       this path is cached and useful in the future to build the /examples.
 # LIB_TARGET - target name of result output binary library file,
 #                       this name of the library is stored and cached for the build of /examples.
-
+# All depends on whether DEBUG or RELEASE.
 set( QSERIALDEVICE_LIBRARY "qserialdevice" CACHE string "Name of the output library binaries." )
 
 # Disable Qt GUI and add definition.
@@ -92,10 +87,6 @@ set_source_files_properties( qserialdevice/nativeserialengine.cpp OBJECT_DEPENDS
 set_source_files_properties( qserialdeviceenumerator/serialdeviceenumerator.cpp OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/moc_serialdeviceenumerator.cpp )
 
 # Set shared/static build library.
-#if(BUILD_SHARED)
-#    add_library( ${QSERIALDEVICE_LIBRARY} SHARED ${QSERIALDEVICE_SRCS} ${QSERIALDEVICE_MOCS} )
-#else()
-    add_library( ${QSERIALDEVICE_LIBRARY} STATIC ${QSERIALDEVICE_SRCS} ${QSERIALDEVICE_MOCS} )
-#endif()
+add_library( ${QSERIALDEVICE_LIBRARY} STATIC ${QSERIALDEVICE_SRCS} ${QSERIALDEVICE_MOCS} )
 
 target_link_libraries( ${QSERIALDEVICE_LIBRARY}  ${QT_QTCORE_LIBRARY} ${ADDITIONAL_LIBRARY} )

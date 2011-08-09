@@ -35,7 +35,6 @@
 #endif
 
 
-
 //-----------------------------------------------------------------------------------------------//
 
 NativeSerialEngine::NativeSerialEngine(QObject *parent)
@@ -63,22 +62,10 @@ void NativeSerialEngine::close()
     d->nativeClose();
 }
 
-bool NativeSerialEngine::setBaudRate(AbstractSerial::BaudRate baudRate)
+bool NativeSerialEngine::setBaudRate(qint32 baudRate, AbstractSerial::BaudRateDirection baudDir)
 {
     Q_D(NativeSerialEngine);
-    return d->nativeSetBaudRate(baudRate);
-}
-
-bool NativeSerialEngine::setInputBaudRate(AbstractSerial::BaudRate baudRate)
-{
-    Q_D(NativeSerialEngine);
-    return d->nativeSetInputBaudRate(baudRate);
-}
-
-bool NativeSerialEngine::setOutputBaudRate(AbstractSerial::BaudRate baudRate)
-{
-    Q_D(NativeSerialEngine);
-    return d->nativeSetOutputBaudRate(baudRate);
+    return d->nativeSetBaudRate(baudRate, baudDir);
 }
 
 bool NativeSerialEngine::setDataBits(AbstractSerial::DataBits dataBits)
@@ -105,10 +92,28 @@ bool NativeSerialEngine::setFlowControl(AbstractSerial::Flow flow)
     return d->nativeSetFlowControl(flow);
 }
 
-bool NativeSerialEngine::setCharIntervalTimeout(int msecs)
+void NativeSerialEngine::setCharReadTimeout(int usecs)
 {
     Q_D(NativeSerialEngine);
-    return d->nativeSetCharIntervalTimeout(msecs);
+    d->nativeSetCharReadTimeout(usecs);
+}
+
+int NativeSerialEngine::charReadTimeout() const
+{
+    Q_D(const NativeSerialEngine);
+    return d->nativeCharReadTimeout();
+}
+
+void NativeSerialEngine::setTotalReadConstantTimeout(int msecs)
+{
+    Q_D(NativeSerialEngine);
+    d->nativeSetTotalReadConstantTimeout(msecs);
+}
+
+int NativeSerialEngine::totalReadConstantTimeout() const
+{
+    Q_D(const NativeSerialEngine);
+    return d->nativeTotalReadConstantTimeout();
 }
 
 bool NativeSerialEngine::setDtr(bool set) const
@@ -162,15 +167,12 @@ qint64 NativeSerialEngine::bytesAvailable() const
 qint64 NativeSerialEngine::write(const char *data, qint64 maxSize)
 {
     Q_D(NativeSerialEngine);
-    //chunk size to write bytes ( in byte )
-    enum { WRITE_CHUNK_SIZE = 512 };
     qint64 ret = 0;
+    forever {
+        qint64 bytesToWrite = qMin<qint64>(WRITE_CHUNKSIZE, maxSize - ret);
+        qint64 bytesWritten = d->nativeWrite((const char*)(data + ret), bytesToWrite);
 
-    for (;;) {
-        qint64 bytesToSend = qMin<qint64>(WRITE_CHUNK_SIZE, maxSize - ret);
-        qint64 bytesWritten = d->nativeWrite((const char*)(data + ret), bytesToSend);
-
-        if ( (bytesWritten <= 0) || (bytesWritten != bytesToSend) )
+        if ((bytesWritten <= 0) || (bytesWritten != bytesToWrite))
             return qint64(-1);
 
         ret += bytesWritten;
@@ -184,35 +186,19 @@ qint64 NativeSerialEngine::write(const char *data, qint64 maxSize)
 qint64 NativeSerialEngine::read(char *data, qint64 maxSize)
 {
     Q_D(NativeSerialEngine);
-
-    qint64 readBytes = 0;
-    bool readyToRead = false;
-    bool readyToWrite = false;
     qint64 ret = 0;
+    forever {
+        qint64 bytesToRead = qMin<qint64>(READ_CHUNKSIZE, maxSize - ret);
+        qint64 bytesReaded = d->nativeRead(data + ret, bytesToRead);
 
-    do {
-        ret = d->nativeBytesAvailable();
-        if (ret > 0) {
-            ret = qMin<qint64>(ret, maxSize - readBytes);
-            if (ret > 0) {
-                ret = d->nativeRead(&data[readBytes], ret);
-                if (ret > 0) {
-                    readBytes += ret;
-                    if (readBytes == maxSize)
-                        break;
-                }
-                else
-                    break;
-            }
-            else
-                break;
-        }
-        if (-1 == ret) {
-            readBytes = ret;
+        if (bytesReaded <= 0)
             break;
-        }
-    } while ( d->nativeSelect(d->charIntervalTimeout, true, false, &readyToRead, &readyToWrite) > 0 );
-    return readBytes;
+
+        ret += bytesReaded;
+        if ((ret == maxSize) || (bytesReaded < bytesToRead))
+            break;
+    }
+    return ret;
 }
 
 bool NativeSerialEngine::waitForReadOrWrite(bool *readyToRead, bool *readyToWrite,

@@ -35,9 +35,6 @@
     - Obtain information about any serial device that is in the system.
     .
 
-    While supported by the work of class only in the operating system MS Windows 2K/XP/Vista/7
-    and any distributions, GNU/Linux. \n
-
     The structure of the class is implemented by the ideology \b pimpl. \n
 
     The principle of class on different operating systems have significant differences:
@@ -45,6 +42,15 @@
     and the events by adding/removing serial device is removed from the system registry.
     - In GNU/Linux used to obtain information \b UDEV (http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev.html).
     .
+    
+    Class SerialDeviceEnumerator supported on the following operating systems:
+    
+    <TABLE>
+    <TR><TH> Operating System </TH><TH> Support </TH><TH> Note </TH></TR>
+    <TR><TD> MS Windows 2K,XP,Vista,7 </TD><TD> Yes </TD><TD> Full </TD></TR>
+    <TR><TD> Distributions GNU Linux </TD><TD> Yes </TD><TD> In the presence of Udev </TD></TR>
+    <TR><TD> Mac OSX </TD><TD> No </TD><TD> It is not possible to write code and test it. </TD></TR>
+    </TABLE>
 
     This class combines the functions, the such "obsolete" classes as: SerialDeviceWatcher and SerialDeviceInfo.
     Reason for joining was that SerialDeviceWatcher and SerialDeviceInfo use the same type code
@@ -57,6 +63,8 @@
     - Faster and optimal update information on the devices at its request.
     .
 
+    \b A \b brief \b description \b use.
+    
     Getting Started with the class should begin with creating an instance of an object SerialDeviceEnumerator. \n
     Example:
     \code
@@ -129,7 +137,7 @@
         qDebug() << sde->friendlyName() << sde->description() ...;
         ...
     \endcode
-    But in this case after being called setEnabled (true) real device COM1 may be lost from the system (for example, pulled out the USB/Serial converter)
+    But in this case after being called setEnabled(false) real device COM1 may be lost from the system (for example, pulled out the USB/Serial converter)
     and then we get the wrong information on COM1 (ie the information that was before the removal).
     It is therefore recommended that monitoring is always enabled.
 

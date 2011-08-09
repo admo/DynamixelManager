@@ -59,26 +59,16 @@ public:
     explicit AbstractSerialEngine(QObject *parent = 0);
     virtual ~AbstractSerialEngine();
 
-    //TODO: Why static?
     static AbstractSerialEngine *createSerialEngine(QObject *parent);
 
     void setDeviceName(const QString &deviceName);
     QString deviceName() const;
 
-    void setOpenMode(AbstractSerial::OpenMode mode);
-    AbstractSerial::OpenMode openMode() const;
-
-    virtual bool open(AbstractSerial::OpenMode mode) = 0;
-    bool isOpen() const;
-
+    virtual bool open(QIODevice::OpenMode mode) = 0;
     virtual void close() = 0;
 
-    virtual bool setBaudRate(AbstractSerial::BaudRate baudRate) = 0;
-    virtual bool setInputBaudRate(AbstractSerial::BaudRate baudRate) = 0;
-    virtual bool setOutputBaudRate(AbstractSerial::BaudRate baudRate) = 0;
-    AbstractSerial::BaudRate baudRate() const;
-    AbstractSerial::BaudRate inputBaudRate() const;
-    AbstractSerial::BaudRate outputBaudRate() const;
+    virtual bool setBaudRate(qint32 baudRate, AbstractSerial::BaudRateDirection baudDir) = 0;
+    qint32 baudRate(AbstractSerial::BaudRateDirection baudDir) const;
 
     virtual bool setDataBits(AbstractSerial::DataBits dataBits) = 0;
     AbstractSerial::DataBits dataBits() const;
@@ -92,8 +82,11 @@ public:
     virtual bool setFlowControl(AbstractSerial::Flow flow) = 0;
     AbstractSerial::Flow flow() const;
 
-    virtual bool setCharIntervalTimeout(int msecs) = 0;
-    int charIntervalTimeout() const;
+    virtual void setCharReadTimeout(int usecs) = 0;
+    virtual int charReadTimeout() const = 0;
+
+    virtual void setTotalReadConstantTimeout(int msecs) = 0;
+    virtual int totalReadConstantTimeout() const = 0;
 
     virtual bool setDtr(bool set) const = 0;
     virtual bool setRts(bool set) const = 0;

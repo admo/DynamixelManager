@@ -85,7 +85,8 @@ SerialDeviceEnumeratorPrivate::SerialDeviceEnumeratorPrivate()
             << "ttyS"       /* standart UART 8250 and etc. */
             << "ttyUSB"     /* usb/serial converters PL2303 and etc. */
             << "ttyACM"     /* CDC_ACM converters (i.e. Mobile Phones). */
-            << "ttyMI";     /* MOXA pci/serial converters. */
+            << "ttyMI"      /* MOXA pci/serial converters. */
+            << "rfcomm";    /* Bluetooth serial device. */
             //This add other devices mask.
 #endif
 
@@ -247,5 +248,5 @@ void SerialDeviceEnumeratorPrivate::_q_processWatcher()
 
 bool SerialDeviceEnumeratorPrivate::isValid() const
 {
-    return ( this->udev && this->udev_monitor && (-1 != this->udev_socket) );
+    return (this->udev && this->udev_monitor && (-1 != this->udev_socket));
 }

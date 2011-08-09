@@ -41,16 +41,6 @@
 #endif
 
 
-//Windows Ports Class GUID
-#ifndef GUID_DEVCLASS_PORTS
-    DEFINE_GUID(GUID_DEVCLASS_PORTS, 0x4D36E978, 0xE325, 0x11CE, 0xBF, 0xC1, 0x08, 0x00, 0x2B, 0xE1, 0x03, 0x18);
-#endif
-
-//Virtual Ports Class GUIG (i.e. com0com, nmea and etc)
-#ifndef GUID_DEVCLASS_VIRTUAL_PORTS
-    DEFINE_GUID(GUID_DEVCLASS_VIRTUAL_PORTS, 0xDF799E12, 0x3C56, 0x421B, 0xB2, 0x98, 0xB6, 0xD3, 0x64, 0x2B, 0xC8, 0x78);
-#endif
-
 SerialDeviceEnumeratorPrivate::SerialDeviceEnumeratorPrivate()
         : notifier(0)
 {
@@ -137,7 +127,7 @@ bool SerialDeviceEnumeratorPrivate::nativeIsBusy() const
                                0,
                                0);
 
-    if ( INVALID_HANDLE_VALUE == hd ) {
+    if (INVALID_HANDLE_VALUE == hd) {
         ret = true;
 
         ::LONG err = ::GetLastError();
@@ -160,7 +150,7 @@ bool SerialDeviceEnumeratorPrivate::nativeIsBusy() const
     }
     else {
         ::CancelIo(hd);
-        if ( 0 == ::CloseHandle(hd) ) {
+        if (0 == ::CloseHandle(hd)) {
 #if defined (SERIALDEVICEENUMERATOR_WIN_DEBUG)
     qDebug("Windows: SerialDeviceEnumeratorPrivate::isBusy() \n"
             " -> function: ::CloseHandle(hd) returned 0. Error! \n");
@@ -423,6 +413,16 @@ static QString getNativeDriver(const QString &service)
     return result;
 }
 
+static const ::GUID guidArray[] =
+{
+    /* Windows Ports Class GUID */
+    { 0x4D36E978, 0xE325, 0x11CE, { 0xBF, 0xC1, 0x08, 0x00, 0x2B, 0xE1, 0x03, 0x18 } },
+    /* Virtual Ports Class GUIG (i.e. com0com, nmea and etc) */
+    { 0xDF799E12, 0x3C56, 0x421B, { 0xB2, 0x98, 0xB6, 0xD3, 0x64, 0x2B, 0xC8, 0x78 } },
+    /* Windows Modems Class GUID */
+    { 0x4D36E96D, 0xE325, 0x11CE, { 0xBF, 0xC1, 0x08, 0x00, 0x2B, 0xE1, 0x03, 0x18 } }
+};
+
 SerialInfoMap SerialDeviceEnumeratorPrivate::updateInfo() const
 {
    SerialInfoMap info;
@@ -431,17 +431,10 @@ SerialInfoMap SerialDeviceEnumeratorPrivate::updateInfo() const
       1. GUID_DEVCLASS_PORTS
       2. GUID_DEVCLASS_VIRTUAL_PORTS
     */
-   for (int i = 0; i < 2; ++i) {
+   int guidCount = sizeof(guidArray);
+   for (int i = 0; i < guidCount; ++i) {
 
-       ::GUID guid = {0};
-
-       switch (i) {
-       case 0: guid = GUID_DEVCLASS_PORTS; break;
-       case 1: guid = GUID_DEVCLASS_VIRTUAL_PORTS; break;
-       default:;
-       }
-
-       ::HDEVINFO DeviceInfoSet = ::SetupDiGetClassDevs(&guid,
+       ::HDEVINFO DeviceInfoSet = ::SetupDiGetClassDevs(&guidArray[i],
                                                         0,
                                                         0,
                                                         DIGCF_PRESENT);

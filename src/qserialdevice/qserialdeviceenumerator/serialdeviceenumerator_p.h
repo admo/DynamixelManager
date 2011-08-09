@@ -100,7 +100,8 @@ public:
   #include <qt_windows.h>
   class QWinEventNotifier;
 #elif defined (Q_OS_MAC)
-////
+  #include <CoreFoundation/CoreFoundation.h>
+  #include <IOKit/IOKitLib.h>
 #elif defined (Q_OS_UNIX)
   struct udev;
   struct udev_monitor;
@@ -140,6 +141,10 @@ public:
 
     SerialDeviceEnumerator * q_ptr;
 
+#if defined (Q_OS_MAC)
+    void notifierHandler();
+#endif
+
 private:
     SerialInfoMap infoMap; /* It stores information about all found devices with serial interface. */
     SerialInfoMap updateInfo() const;
@@ -153,6 +158,10 @@ private:
     QWinEventNotifier *notifier;
 #elif defined (Q_OS_MAC)
     ////
+    CFMutableDictionaryRef classesToMatch;
+    IONotificationPortRef notifier;
+    CFRunLoopSourceRef loop;
+    bool enabled;
 #elif defined (Q_OS_UNIX)
     struct udev *udev;
     int udev_socket;

@@ -20,7 +20,7 @@ bool NativeSerialNotifier::isReadNotificationEnabled() const
 
 void NativeSerialNotifier::setReadNotificationEnabled(bool enable)
 {
-    (enable) ? ( this->setMask |= EV_RXCHAR ) : ( this->setMask &= ~EV_RXCHAR );
+    (enable) ? (this->setMask |= EV_RXCHAR) : (this->setMask &= ~EV_RXCHAR);
     this->setMaskAndActivateEvent();
 }
 
@@ -31,8 +31,14 @@ bool NativeSerialNotifier::isWriteNotificationEnabled() const
 
 void NativeSerialNotifier::setWriteNotificationEnabled(bool enable)
 {
-    (enable) ? ( this->setMask |= EV_TXEMPTY ) : ( this->setMask &= ~EV_TXEMPTY );
+    (enable) ? (this->setMask |= EV_TXEMPTY) : (this->setMask &= ~EV_TXEMPTY);
     this->setMaskAndActivateEvent();
+
+    // This only for OS Windows, as EV_TXEMPTY event is triggered only
+    // after the last byte of data (as opposed to events such as Write QSocketNotifier).
+    // Therefore, we are forced to run writeNotification(), as EV_TXEMPTY does not work.
+    if (enable)
+        this->engine->writeNotification();
 }
 
 bool NativeSerialNotifier::isExceptionNotificationEnabled() const
@@ -42,7 +48,7 @@ bool NativeSerialNotifier::isExceptionNotificationEnabled() const
 
 void NativeSerialNotifier::setExceptionNotificationEnabled(bool enable)
 {
-    (enable) ? ( this->setMask |= EV_ERR ) : ( this->setMask &= ~EV_ERR );
+    (enable) ? (this->setMask |= EV_ERR) : (this->setMask &= ~EV_ERR);
     this->setMaskAndActivateEvent();
 }
 
@@ -54,7 +60,7 @@ bool NativeSerialNotifier::isLineNotificationEnabled() const
 void NativeSerialNotifier::setLineNotificationEnabled(bool enable)
 {
     ::DWORD lineMask = (EV_CTS | EV_DSR | EV_RING);
-    (enable) ? ( this->setMask |= lineMask ) : ( this->setMask &= ~lineMask );
+    (enable) ? (this->setMask |= lineMask) : (this->setMask &= ~lineMask);
     this->setMaskAndActivateEvent();
 }
 
@@ -67,6 +73,7 @@ bool NativeSerialNotifier::event(QEvent *e)
             this->engine->readNotification();
             ret = true;
         }
+        //TODO: This is why it does not work?
         if (EV_TXEMPTY & this->currentMask & this->setMask) {
             this->engine->writeNotification();
             ret = true;
@@ -92,6 +99,7 @@ bool NativeSerialNotifier::event(QEvent *e)
 void NativeSerialNotifier::setMaskAndActivateEvent()
 {
     ::SetCommMask(this->descriptor, this->setMask);
+
     if (this->setMask)
         ::WaitCommEvent(this->descriptor, &this->currentMask, &this->o);
 

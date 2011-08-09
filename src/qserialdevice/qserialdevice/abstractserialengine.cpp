@@ -21,6 +21,7 @@
 *             ICQ: 321789831
 */
 
+#include <QtCore/QRegExp>
 
 #include "nativeserialengine.h"
 #include "abstractserialengine_p.h"
@@ -34,12 +35,12 @@ AbstractSerialEnginePrivate::AbstractSerialEnginePrivate()
         , parity(AbstractSerial::ParityNone)
         , stopBits(AbstractSerial::StopBits1)
         , flow(AbstractSerial::FlowControlOff)
-        , charIntervalTimeout(10)
+        , charIntervalTimeout(0)
         , status(AbstractSerial::ENone)
-        , openMode(AbstractSerial::NotOpen)
         , oldSettingsIsSaved(false)
         , descriptor(0)
         , receiver(0)
+        , isAutoCalcReadTimeoutConstant(false)
 {
 }
 
@@ -58,6 +59,37 @@ AbstractSerialEnginePrivate::AbstractSerialEnginePrivate()
 #else
     const char AbstractSerialEnginePrivate::defaultDeviceName[] = "/dev/ttyS0";
 #endif
+
+
+int AbstractSerialEnginePrivate::currDataBitsToValue() const
+{
+    switch (this->dataBits) {
+    case AbstractSerial::DataBits5: return 5;
+    case AbstractSerial::DataBits6: return 6;
+    case AbstractSerial::DataBits7: return 7;
+    case AbstractSerial::DataBits8: return 8;
+    default:;
+    }
+    return 8;
+}
+
+int AbstractSerialEnginePrivate::currParityToValue() const
+{
+    switch (this->parity) {
+    case AbstractSerial::ParityNone: return 0;
+    default:;
+    }
+    return 1;
+}
+
+int AbstractSerialEnginePrivate::currStopBitsToValue() const
+{
+    switch (this->stopBits) {
+    case AbstractSerial::StopBits2: return 2;
+    default:;
+    }
+    return 1;
+}
 
 //---------------------------------------------------------------------------//
 
@@ -93,35 +125,14 @@ QString AbstractSerialEngine::deviceName() const
     return d_func()->deviceName;
 }
 
-void AbstractSerialEngine::setOpenMode(AbstractSerial::OpenMode mode)
+qint32 AbstractSerialEngine::baudRate(AbstractSerial::BaudRateDirection baudDir) const
 {
-    d_func()->openMode = mode;
-}
-
-AbstractSerial::OpenMode AbstractSerialEngine::openMode() const
-{
-    return d_func()->openMode;
-}
-
-bool AbstractSerialEngine::isOpen() const
-{
-    return (d_func()->openMode != AbstractSerial::NotOpen);
-}
-
-AbstractSerial::BaudRate AbstractSerialEngine::baudRate() const
-{
-    return (d_func()->ibaudRate == d_func()->obaudRate) ?
-            d_func()->ibaudRate : AbstractSerial::BaudRateUndefined;
-}
-
-AbstractSerial::BaudRate AbstractSerialEngine::inputBaudRate() const
-{
-    return d_func()->ibaudRate;
-}
-
-AbstractSerial::BaudRate AbstractSerialEngine::outputBaudRate() const
-{
-    return d_func()->obaudRate;
+    switch (baudDir) {
+    case AbstractSerial::InputBaud: return d_func()->ibaudRate;
+    case AbstractSerial::OutputBaud: return d_func()->obaudRate;
+    default:;
+    }
+    return (d_func()->ibaudRate == d_func()->obaudRate) ? d_func()->ibaudRate : 0;
 }
 
 AbstractSerial::DataBits AbstractSerialEngine::dataBits() const
@@ -142,11 +153,6 @@ AbstractSerial::StopBits AbstractSerialEngine::stopBits() const
 AbstractSerial::Flow AbstractSerialEngine::flow() const
 {
     return d_func()->flow;
-}
-
-int AbstractSerialEngine::charIntervalTimeout() const
-{
-    return d_func()->charIntervalTimeout;
 }
 
 AbstractSerial::Status AbstractSerialEngine::status() const
@@ -182,6 +188,5 @@ void AbstractSerialEngine::lineNotification()
     if (AbstractSerialEngineReceiver *receiver = d_func()->receiver)
         receiver->lineNotification();
 }
-
 
 #include "moc_abstractserialengine.cpp"
