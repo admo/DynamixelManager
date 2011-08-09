@@ -27,8 +27,8 @@ DynamixelManager::DynamixelManager(QWidget *parent) :
 	/* Sygnały akcji menu */
 	/* Open */
 	connect(ui->actionOpen, SIGNAL(triggered()), selectSerialPortDialog, SLOT(exec()));
-	connect(selectSerialPortDialog, SIGNAL(openDevice(const QString&, unsigned int)),
-			dynamixelBus, SLOT(openDevice(const QString&, unsigned int)));
+	connect(selectSerialPortDialog, SIGNAL(openDevice(const QString&, const QString&)),
+			dynamixelBus, SLOT(openDevice(const QString&, const QString&)));
 	connect(dynamixelBus, SIGNAL(deviceOpened(bool)), this, SLOT(deviceOpened(bool)));
 	/* Close */
 	connect(ui->actionClose, SIGNAL(triggered()), dynamixelBus, SLOT(closeDevice()));

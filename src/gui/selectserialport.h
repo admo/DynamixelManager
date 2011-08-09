@@ -10,6 +10,7 @@ namespace Ui {
 }
 
 class SerialDeviceEnumerator; // Używanie pimpl
+class AbstractSerial;
 
 class SelectSerialPortDialog : public QDialog {
     Q_OBJECT
@@ -18,7 +19,7 @@ public:
     ~SelectSerialPortDialog();
 
 signals:
-    void openDevice(const QString&, const unsigned int);
+    void openDevice(const QString&, const QString&);
 
 protected:
     void changeEvent(QEvent *e);
@@ -26,10 +27,12 @@ protected:
 private:
     Ui::SelectSerialPortDialog *m_ui;
     SerialDeviceEnumerator *serialDeviceEnumerator;
+    AbstractSerial *abstractSerial;
 
 private slots:
     void openDeviceEmit();
     void listOfSerialDevicesChanged(const QStringList&);
+    void selectedDeviceChanged(const QString&);
 };
 
 #endif // SELECTSERIALPORT_H

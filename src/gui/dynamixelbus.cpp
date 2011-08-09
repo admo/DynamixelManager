@@ -185,12 +185,12 @@ void DynamixelBus::run() {
 	TRI_LOG_STR("Out DynamixelBus::run()");
 }
 
-void DynamixelBus::openDevice(const QString& device, unsigned int baud) {
+void DynamixelBus::openDevice(const QString& device, const QString& baud) {
 	TRI_LOG(thread());
 	QMutexLocker locker(runMutex.get());
 	TRI_LOG_STR("In DynamixelBus::openDevice()");
 	TRI_LOG(device.toStdString());
-	TRI_LOG(baud);
+	TRI_LOG(baud.toStdString());
 
 //	dyn_init(dyn_param.get(), qPrintable(device), baud, dyn_servo.data(), dyn_servo.size());
 //	opened = dyn_connect(dyn_param.get()) == 0 ? true : false;

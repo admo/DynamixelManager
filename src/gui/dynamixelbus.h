@@ -178,7 +178,7 @@ public:
 	QAbstractItemModel *getListModel() const;
 
 public slots:
-	void openDevice(const QString&, unsigned int);
+	void openDevice(const QString&, const QString&);
 	void closeDevice();
 	void ping(quint8);
 
