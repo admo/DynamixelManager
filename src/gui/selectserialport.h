@@ -18,18 +18,18 @@ public:
     ~SelectSerialPortDialog();
 
 signals:
-	void openDevice(const QString&, const unsigned int);
+    void openDevice(const QString&, const unsigned int);
 
 protected:
     void changeEvent(QEvent *e);
 
 private:
     Ui::SelectSerialPortDialog *m_ui;
-		SerialDeviceEnumerator *serialDeviceEnumerator;
+    SerialDeviceEnumerator *serialDeviceEnumerator;
 
 private slots:
     void openDeviceEmit();
-		void listOfSerialDevicesChanged(const QStringList&);
+    void listOfSerialDevicesChanged(const QStringList&);
 };
 
 #endif // SELECTSERIALPORT_H
