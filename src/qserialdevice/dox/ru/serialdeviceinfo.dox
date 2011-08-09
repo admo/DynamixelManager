@@ -1,0 +1,217 @@
+/*
+* This file is part of QSerialDevice, an open-source cross-platform library
+* Copyright (C) 2009  Denis Shienkov
+*
+* This library is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*
+* Contact Denis Shienkov:
+*          e-mail: <scapig2@yandex.ru>
+*             ICQ: 321789831
+*/
+
+
+/*! \~russian
+    \class SerialDeviceInfo
+
+    \brief Класс SerialDeviceInfo предназначен для получения информации о последовательном устройсте.
+
+    Этот класс является частью библиотеки QSerialDevice и может использоваться совместно с классом AbstractSerial.\n
+    С помощью данного класса можно получить информацию об интересующем последовательном устройстве.\n
+    Структура класса реализована по идеологии \b pimpl .\n
+
+    Пока поддерживается работа класса только в ОС MS Windows 2K/XP/Vista/7 и любых дистрибутивах GNU/Linux.\n
+
+    Принцип работы класса в разных операционных системах имеет существенные отличия:
+    - В MS Windows 2K/XP/Vista/7 информация о последовательном устройстве извлекается из системного реестра.
+    - В GNU/Linux для получении информации используется \b UDEV (http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev.html).
+
+    Информацию о последовательном устройстве класс ищет по имени интересующего устройства, 
+    т.е. имя устройства является входным параметром для класса.\n
+    Например в ОС Windows это имена: COM1 ... COMn, в ОС GNU/Linux это имена: /dev/ttyS0 ... /dev/ttySn или /dev/ttyUSBn и т.п.
+    Т.е. для получения информации об последовательном устройстве необходимо сначала установить имя этого устройства!
+
+    Начало работы с классом необходимо начинать с создания экземпляра объекта SerialDeviceInfo.\n
+    Пример:
+    \code
+        ...
+        SerialDeviceInfo *sdi = new SerialDeviceInfo(this);
+        ...
+    \endcode
+
+    Далее необходимо установить имя интересующего последовательного устройства:
+    - void SerialDeviceInfo::setName(const QString &name).
+    \note
+    - Имена в ОС Windows должны быть "короткие" (т.е. без префиксов \\\\.\\ и т.п.), например: COM1 ... COMn.
+    - Имена в ОС GNU/Linux должны быть "полные" (т.е. полный путь до устройства), например: /dev/ttyS0 ... /dev/ttySn.
+    - Менять имя (переустанавливать новое имя) можно в любое время.
+    .
+
+    Для очистки состояния внутренних значений (переменных) класса используется метод:
+    - void SerialDeviceInfo::clear() очищает (обнуляет) "кешированное" ранее имя устройства и все сопутствующие внутренние переменные. 
+    .
+
+    Для получения текущего установленного имени последовательного устройства используется метод:
+    - QString SerialDeviceInfo::systemName() const получает текущее имя.
+    .
+
+    Для проверки конфигурации класса используется метод:
+    - bool SerialDeviceInfo::isEmpty() const определяет пуста или нет внутренняя переменная класса
+    которая соответствует имени устройства (т.е. было или нет установлено имя методом setName() ). 
+    .
+
+    Для получения информации о последовательном устройстве используются методы:
+    - QString SerialDeviceInfo::systemPath() получает информацию о системном пути к последовательному устройству.
+    - QString SerialDeviceInfo::locationInfo() получает информацию о расположении последовательного устройства.
+    - QString SerialDeviceInfo::driver() получает информацию о драйвере последовательного устройства.
+    - QString SerialDeviceInfo::subSystem() получает имя подсистемы последовательного устройства.
+    - QString SerialDeviceInfo::friendlyName() получает "дружественное имя" последовательного устройства.
+    - QString SerialDeviceInfo::description() получает описание последовательного устройства.
+    - QStringList SerialDeviceInfo::hardwareID() получает идентификатор аппаратных средств последовательного устройства.
+    - QString SerialDeviceInfo::vendorID() получает идентификатор производителя последовательного устройства.
+    - QString SerialDeviceInfo::productID() получает идентификатор продукта (чипа) последовательного устройства.
+    - QString SerialDeviceInfo::manufacturer() получает название фирмы-производителя последовательного устройства.
+    .
+
+    Для определения наличия последовательного устройства в системе используется метод:
+    - bool SerialDeviceInfo::isExists() проверяет наличие последовательного устройства в системе.
+    .
+
+    Для определения занято ли текущее последовательное устройство каким-либо процессом (например открыто и используется) используется метод:
+    - bool SerialDeviceInfo::isBusy() проверяет занятость последовательного устройства.
+    .
+
+    \n
+    \n
+    \n
+
+    \author Денис Шиенков \n
+    Контакты:
+    - ICQ       : 321789831
+    - e-mail    : scapig2@yandex.ru
+*/
+
+//----------------------------------------------------------------------------------------------------------------------------------------
+
+/*! \~russian 
+    \fn SerialDeviceInfo::SerialDeviceInfo(QObject *parent)
+    Конструктор по умолчанию.
+*/
+
+/*! \~russian 
+    \fn SerialDeviceInfo::~SerialDeviceInfo()
+    Деструктор по умолчанию.
+*/
+
+/*! \~russian 
+    \fn void SerialDeviceInfo::setName(const QString &name)
+    Устанавливает (присваивает) объекту класса SerialDeviceInfo имя \a name последовательного устройства
+    информацию о котором мы хотим получить:
+    - В MS Windows имена должны быть "короткими", т.е. например: COM1 ... COMn.
+    - В GNU/Linux имена должны быть "длинными", т.е. например: /dev/ttyS0 ... /dev/ttySn.
+    .
+    \param[in] name Имя интересующего нас последовательного устройства.
+*/
+
+/*! \~russian 
+    \fn void SerialDeviceInfo::clear()
+    Очищает (сбрасывает, обнуляет) внутренние переменные объекта класса SerialDeviceInfo.
+*/
+
+/*! \~russian 
+    \fn QString SerialDeviceInfo::systemName() const
+    Возвращает имя последовательного устройства с которым сконфигурирован объект SerialDeviceInfo.
+    Если имя устройства нет или оно не было установлено то возвратит пустую строку.
+    \return Имя последовательного устройства в виде QString.
+*/
+
+/*! \~russian 
+    \fn QString SerialDeviceInfo::systemPath()
+    Возвращает системный путь. Если информация не найдена то возвратит пустую строку.
+    \return Путь в виде QString.
+*/
+
+/*! \~russian 
+    \fn QString SerialDeviceInfo::subSystem()
+    Возвращает подсистему. Если информация не найдена то возвратит пустую строку.
+    \return Подсистема в виде QString.
+*/
+
+/*! \~russian 
+    \fn QString SerialDeviceInfo::locationInfo()
+    Возвращает расположение. Если информация не найдена то возвратит пустую строку.
+    \return Расположение в виде QString.
+*/
+
+/*! \~russian 
+    \fn QString SerialDeviceInfo::driver()
+    \note Не реализовано.
+*/
+
+/*! \~russian 
+    \fn QString SerialDeviceInfo::friendlyName()
+    Возвращает дружественное имя. Если информация не найдена то возвратит пустую строку.
+    \return Дружественное имя в виде QString.
+*/
+
+/*! \~russian 
+    \fn QString SerialDeviceInfo::description()
+    Возвращает описание. Если информация не найдена то возвратит пустую строку.
+    \return Описание в виде QString.
+*/
+
+/*! \~russian 
+    \fn QStringList SerialDeviceInfo::hardwareID()
+    Возвращает идентификатор аппаратных средств. Если информация не найдена то возвратит пустой список.
+    \return Идентификатор в виде QStringList.
+*/
+
+/*! \~russian 
+    \fn QString SerialDeviceInfo::vendorID()
+    Возвращает идентификатор производителя. Если информация не найдена то возвратит пустую строку.
+    \return Идентификатор в виде QString.
+*/
+
+/*! \~russian 
+    \fn QString SerialDeviceInfo::productID()
+    Возвращает идентификатор продукта. Если информация не найдена то возвратит пустую строку.
+    \return Идентификатор в виде QString.
+*/
+
+/*! \~russian 
+    \fn QString SerialDeviceInfo::manufacturer()
+    Возвращает имя производителя. Если информация не найдена то возвратит пустую строку.
+    \return Имя в виде QString.
+*/
+
+/*! \~russian 
+    \fn bool SerialDeviceInfo::isExists()
+    Проверяет наличие последовательного устройства в системе в текущий момент.
+    \return \a True если последовательное устройство присутствует в системе.
+*/
+
+
+/*! \~russian 
+    \fn bool SerialDeviceInfo::isEmpty() const
+    Проверяет конфигурацию объекта SerialDeviceInfo на факт того что объект сконфигурирован.
+    \return \a True если объект класса пустой, т.е. не установлено имя методом: setName().
+*/
+
+
+/*! \~russian 
+    \fn bool SerialDeviceInfo::isBusy()
+    Проверяет занято или нет последовательное устройство в текущий момент.
+    \return \a True если устройство занято каким-либо процессом (например открыто) или если произошла ошибка.
+*/
+

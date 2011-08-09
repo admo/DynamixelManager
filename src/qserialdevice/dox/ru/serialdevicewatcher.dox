@@ -1,0 +1,132 @@
+/*
+* This file is part of QSerialDevice, an open-source cross-platform library
+* Copyright (C) 2009  Denis Shienkov
+*
+* This library is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*
+* Contact Denis Shienkov:
+*          e-mail: <scapig2@yandex.ru>
+*             ICQ: 321789831
+*/
+
+
+/*! \~russian
+    \class SerialDeviceWatcher
+
+    \brief  Класс SerialDeviceWatcher следит за добавлением/удалением последовательных устройств в системе.
+
+    Этот класс является частью библиотеки QSerialDevice и может использоваться совместно с классом AbstractSerial.\n
+
+    Данный класс предоставляет следующие возможности:
+    - Получать список имен всех имеющихся в системе последовательных устройств.
+    - Уведомлять об удалении/добавлении последовательного устройства.
+    .
+
+    Пока поддерживается работа класса только в ОС MS Windows 2K/XP/Vista/7 и любых дистрибутивах GNU/Linux. 
+    Также есть экспериментальный код для работы в Mac OSX.\n
+
+    Структура класса реализована по идеологии \b pimpl .\n
+
+    Принцип работы класса в разных операционных системах имеет существенные отличия:
+    - В MS Windows 2K/XP/Vista/7 информация о наличии последовательных устройств, а также события при добавлении/удалении
+    последовательных устройств извлекается из системного реестра.
+    - В GNU/Linux для получении информации используется \b UDEV (http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev.html)
+    в совокупности с анализом содержимого директории "/dev/".
+    .
+
+    Начало работы с классом необходимо начинать с создания экземпляра объекта SerialDeviceWatcher.\n
+    Пример:
+    \code
+        ...
+        SerialDeviceWatcher *sdw = new SerialDeviceWatcher(this);
+        ...
+    \endcode
+
+    По умолчанию новый экземпляр класса создается с отключенным контролем/слежением за наличием/отсутствием последовательных устройств.\n
+    Если вы хотите использовать слежение то необходимо выполнить этот код:
+    \code
+        ...
+        connect(sdw, SIGNAL(hasChanged(const QStringList &)), this, SLOT(showChange(const QStringList &)));
+        ...
+    \endcode
+    После этого необходимо включить слежение.\n
+
+    Для включения/отключения контроля/слежения за последовательными устройствами используется метод:
+    - void SerialDeviceWatcher::setEnabled(bool enable) включает или отключает слежение.
+
+    Для получения состояния класса (включен или отключен) используется метод:
+    - bool SerialDeviceWatcher::isEnabled() const возвращает текущий режим (слежение активно или нет).
+
+    Для получения списка имен всех имеющихся в системе последовательных устройств используется метод:
+    - QStringList SerialDeviceWatcher::devicesAvailable() возвращает список имен.
+
+    Класс SerialDeviceWatcher реализует следующие сигналы:
+    - void SerialDeviceWatcher::hasChanged(const QStringList &list) излучается при добавлении/удалении последовательного устройства.
+    \note При первом вызове метода setEnabled() сигнал вызовется автоматически с передачей в переменной \a list
+    списка имен всех имеющихся в текущее время последовательных устройств. 
+
+    \n
+    \n
+    \n
+
+    \author Денис Шиенков \n
+    Контакты:
+    - ICQ       : 321789831
+    - e-mail    : scapig2@yandex.ru
+*/
+
+//----------------------------------------------------------------------------------------------------------------------------------------
+
+/*! \~russian
+    \fn SerialDeviceWatcher::SerialDeviceWatcher(QObject *parent)
+    Конструктор по умолчанию.
+*/
+
+/*! \~russian
+    \fn SerialDeviceWatcher::~SerialDeviceWatcher()
+    Деструктор по умолчанию.
+*/
+
+/*! \~russian
+    \fn QStringList SerialDeviceWatcher::devicesAvailable()
+    Возвращает список имен всех последовательных устройств которые присутствуют 
+    в системе на момент вызова метода. В случае отсутствия последовательных устройств
+    или ошибке метод возвратит пустую строку.
+    \return Список последовательных устройств в виде QStringList.
+*/
+
+/*! \~russian
+    \fn void SerialDeviceWatcher::setEnabled(bool enable)
+    Включает или отключает режим мониторинга/слежения за добавлением или удалением последовательных
+    устройств из системы в зависимости от параметра \a enable :
+    - Если \a enable == true то включается режим мониторинга/слежения.
+    - Если \a enable == false то отключается режим мониторинга/слежения.
+    .
+    \param[in] enable Флаг включения/отключения слежения.
+*/
+
+/*! \~russian
+    \fn bool SerialDeviceWatcher::isEnabled() const
+    Возвращает текущий статус/состояние/режим SerialDeviceWatcher.
+    \return \a True мониторинг включен.
+*/
+
+/*! \~russian
+    \fn SerialDeviceWatcher::hasChanged(const QStringList &list)
+    Этот сигнал испускается при добавлении/удалении последовательного устройства.
+    Исключением является только первый вызов метода setEnabled() когда сигнал излучается принудительно! 
+    При этом в сигнале передается список устройств которые присутствуют в системе.
+    \param[out] list Список последовательных устройств которые присутствуют в системе.
+*/
