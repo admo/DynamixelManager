@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/icons">
-        <file>resources/serial.png</file>
-        <file>resources/servo.png</file>
-    </qresource>
-</RCC>
