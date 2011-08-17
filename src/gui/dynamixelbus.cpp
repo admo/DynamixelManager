@@ -9,11 +9,11 @@
 /* Implementacja modelu QAbstractItemModel */
 class DynamixelBus::DynamixelBusModel : public QAbstractItemModel {
 private:
-    QVector<quint8> dyn_id;
+    DynamixelServoMap servoList;
     bool opened;
     QString deviceName;
     int baudrate;
-    mutable QReadWriteLock lock;
+//    mutable QReadWriteLock lock;
 
     enum IndexType {
         IndexTypeRoot, IndexTypeDeviceName, IndexTypeBaudRate, IndexTypeID
@@ -22,7 +22,7 @@ private:
 public:
 
     DynamixelBusModel(const DynamixelBus& dB) :
-    dyn_id(0), opened(false), deviceName(), baudrate(0) {
+    opened(false), deviceName(), baudrate(0) {
         TRI_LOG_STR("In DynamixelBusModel::DynamixelBusModel()");
     }
 
@@ -73,7 +73,7 @@ public:
             case IndexTypeRoot:
                 return 1;
             case IndexTypeDeviceName:
-                return dyn_id.size();
+                return servoList.size();
                 //		case IndexTypeBaudRate:
                 //			return dyn_id.size();
             case IndexTypeID:
@@ -119,7 +119,7 @@ public:
     void deviceOpened(bool opened, const QString& deviceName = QString(), int baudrate = 0) {
         QWriteLocker locker(&lock);
 
-        dyn_id.clear();
+        servoList.clear();
 
         DynamixelBusModel::opened = opened;
 
