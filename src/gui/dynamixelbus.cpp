@@ -152,7 +152,8 @@ public:
     //	}
 };
 
-DynamixelBus::DynamixelBus() : runMutex(new QMutex), serialDevice(new AbstractSerial), opened(false) {
+DynamixelBus::DynamixelBus() :
+runMutex(new QMutex), serialDevice(new AbstractSerial), opened(false) {
     TRI_LOG_STR("In DynamixelBus::DynamixelBus()");
 
     dynamixelBusModel.reset(new DynamixelBusModel(*this));
@@ -267,78 +268,112 @@ bool DynamixelBus::processCommunication(quint8 id, quint8 instruction, const QBy
 
     serialDevice->write(frame);
 
-    quint8 responseLength = 6;
-    switch (instruction) {
-        case 0x01: // ping
-            responseLength = 6;
-            break;
-        case 0x06: // reset
-        case 0x05: // action
-        case 0x03: // write
-        case 0x04: // reg write
-        case 0x02: // write data
-        case 0x83: // sync write
-            break;
-    }
-    // Trzeba wylicz ze względu na instrukcje!
+    quint8 responseLength = computeResponseLength(id, instruction, sendData);
     quint8 bytesRead = 0;
 
     frame.clear();
     while (responseLength > bytesRead && serialDevice->waitForReadyRead(200))
-        bytesRead = frame.append(serialDevice->read(responseLength)).size();
+        bytesRead = frame.append(serialDevice->read(responseLength - bytesRead)).size();
 
-    // Trzeba skopiowac odebrane dane
+    // Sprawdzic checksum
+    //    foreach(char h, frame) {
+    //        std::cout << std::hex << static_cast<short>(h) << " ";
+    //    }
+    //    std::cout << std::endl;
 
-    return bytesRead == responseLength;
+    if (bytesRead != responseLength)
+        return false;
+
+    if (responseLength == 0)
+        return true;
+
+    if (checksum(frame.begin() + 2, frame.end() - 1) != static_cast<quint8> (*(frame.end() - 1)))
+        return false;
+
+    if (responseLength > 6 && recvData != NULL) {
+        recvData->resize(frame[3] - 2);
+        std::copy(frame.begin() + 5, frame.end() - 1, recvData->begin());
+    }
+
+    return true;
 }
 
 quint8 DynamixelBus::computeResponseLength(quint8 id, quint8 instruction, const QByteArray& parameters) const {
+
+    if (instruction == 0x01) // Ping
+        return 6;
+
+    DynamixelServoMap::ConstIterator i = servoList.find(id);
+    if (i == servoList.end()) // Gdy nie ma serwa lub broadcast
+        return 0;
+
     switch (instruction) {
         case 0x01: // ping
             return 6;
         case 0x02: // read
-            // Tutaj trzeba zbadać parametry
-            break;
+            return (i->statusReturnLevel >= 1 && parameters.size() >= 2)
+                    ? 6 + parameters[1] : 0;
         case 0x03: // write
         case 0x04: // reg write
         case 0x05: // action
         case 0x06: // reset
-            // tutaj trzeba zbadac tylko return level i id
-            break;
+            return (i->statusReturnLevel == 2) ? 6 : 0;
         case 0x83: // sync write
         default:
             return 0;
     }
 }
 
-void DynamixelBus::ping(quint8 id) {
+void DynamixelBus::add(quint8 id) {
     QMutexLocker locker(runMutex.get());
-    TRI_LOG_STR("In DynamixelBus::ping(quint8)");
-    TRI_LOG((int) id);
+    TRI_LOG_STR("In DynamixelBus::add(quint8)");
+    if (servoList.find(id) != servoList.end()) {
+        emit added(id, false);
+        return;
+    }
 
-    emit pinged(id, processCommunication(id, 0x01));
+    if (!ping(id)) {
+        emit added(id, false);
+        TRI_LOG_STR("Out DynamixelBus::add(quint8)");
+        return;
+    }
 
-    //	dyn_servo_t dynServo = {id, 0, 0};
-    //	dyn_servo.push_back(dynServo); /* Zmiana adresu, należy przekonfigurować dyn_param */
-    //	dyn_param->dyn_servo = dyn_servo.data();
-    //	dyn_param->dyn_servo_length = dyn_servo.size();
+    ++servoList[id].statusReturnLevel;
+    if (!read(id, 0x00, 1)) {
+        --servoList[id].statusReturnLevel;
+        emit added(id, true);
+        TRI_LOG_STR("Out DynamixelBus::add(quint8)");
+        return;
+    }
 
-    //	bool success = (dyn_ping(dyn_param.get(), id) == DYN_NO_ERROR);
+    ++servoList[id].statusReturnLevel;
+    if (!action(id)) {
+        --servoList[id].statusReturnLevel;
+        emit added(id, true);
+        TRI_LOG_STR("Out DynamixelBus::add(quint8)");
+        return;
+    }
+    emit added(id, true);
+    TRI_LOG_STR("Out DynamixelBus::add(quint8)");
+}
 
-    //	if(success) {
-    //		/* Jeśli się udało pingnąć należy określić return_level */
-    //		dyn_update_return_level(dyn_param.get(), id);
-    //		dynamixelBusModel->servoAdded(dyn_servo);
-    //	} else {
-    //		/* Nie udało się, więc należy usunąć serwo z listy */
-    //		dyn_servo.pop_back();
-    //		dyn_param->dyn_servo = dyn_servo.data();
-    //		dyn_param->dyn_servo_length = dyn_servo.size();
-    //	}
+void DynamixelBus::remove(quint8 id) {
+    servoList.remove(id);
+}
 
-    //	emit pinged(id, success);
+bool DynamixelBus::ping(quint8 id) {
+    return processCommunication(id, 0x01);
+}
 
-    TRI_LOG_STR("Out DynamixelBus::ping(quint8)");
+bool DynamixelBus::read(quint8 id, quint8 address, quint8 length, QByteArray* data) {
+    QByteArray params(2, 0);
+    params[0] = address;
+    params[1] = length;
+    return processCommunication(id, 0x02, params, data);
+}
+
+bool DynamixelBus::action(quint8 id) {
+    return processCommunication(id, 0x05);
 }
 
 void DynamixelBus::setPosition(quint8 id, quint16 position) {

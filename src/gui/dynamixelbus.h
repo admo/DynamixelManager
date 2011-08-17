@@ -2,7 +2,7 @@
 #define DYNAMIXELBUS_H
 
 #include <QThread>
-#include <QVector>
+#include <QMap>
 #include <QString>
 #include <QMutex>
 #include <QWaitCondition>
@@ -22,12 +22,11 @@
 #include "abstractserial.h"
 
 struct DynamixelServo {
-    quint8 id;
     quint8 statusReturnLevel;
     quint8 errorcode;
 };
 
-typedef QVector<DynamixelServo> DynamixelServoVector;
+typedef QMap<quint8, DynamixelServo> DynamixelServoMap;
 
 /* Implementacja struktury DynamixelStatus */
 struct DynamixelControlTableROM {
@@ -170,8 +169,7 @@ private:
     boost::scoped_ptr<AbstractSerial> serialDevice;
     QWaitCondition runWaitCondition;
 
-    //	boost::scoped_ptr<dyn_param_t> dyn_param;
-    DynamixelServoVector servoVector;
+    DynamixelServoMap servoList;
 
     class DynamixelBusModel;
     boost::scoped_ptr<DynamixelBusModel> dynamixelBusModel;
@@ -185,6 +183,11 @@ private:
     bool processCommunication(quint8 id, quint8 instruction, const QByteArray& sendData = QByteArray(), QByteArray* recvData = NULL);
     quint8 computeResponseLength(quint8 id, quint8 instruction, const QByteArray& parameters) const;
 
+    // Basic dynamixel operations
+    bool ping(quint8);
+    bool read(quint8 id, quint8 address, quint8 length, QByteArray* data = NULL);
+    bool action(quint8 id);
+    
 protected:
     void run();
 
@@ -197,7 +200,9 @@ public:
 public slots:
     void openDevice(const QString&, const QString&);
     void closeDevice();
-    void ping(quint8);
+    
+    void add(quint8 id);
+    void remove(quint8 id);
 
     void setPosition(quint8, quint16);
     void setSpeed(quint8, quint16);
@@ -221,7 +226,13 @@ public slots:
 signals:
     void deviceOpened(bool); /* Czy udało się otworzyć port */
     void deviceClosed(); /* Port zamknięty */
+    
+    // Basic dynamixel responses
     void pinged(quint8, bool);
+    
+    void added(quint8, bool);
+    void removed(quint8, bool);
+    
     void controlTableROMUpdated(const DynamixelControlTableROM*);
     void controlTableRAMUpdated(const DynamixelControlTableRAM*);
 

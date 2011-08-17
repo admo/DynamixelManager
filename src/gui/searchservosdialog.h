@@ -17,11 +17,11 @@ public:
     ~SearchServosDialog();
 
 signals:
-	void ping(const quint8 id);
+	void add(const quint8 id);
 	void reset();
 
 public slots:
-	void pinged(quint8, bool);
+	void added(quint8, bool);
 
 private slots:
 	void searchClicked();
@@ -31,7 +31,7 @@ private:
     Ui::SearchServosDialog *ui;
     bool pingAfterPinged;
 
-    void searchingState();
+    void toggleSearchingState();
 };
 
 #endif // SEARCHSERVOSDIALOG_H

@@ -35,8 +35,8 @@ DynamixelManager::DynamixelManager(QWidget *parent) :
 	connect(dynamixelBus, SIGNAL(deviceClosed()), this, SLOT(deviceClosed()));
 	/* Search */
 	connect(ui->actionSearch, SIGNAL(triggered()), searchServosDialog, SLOT(exec()));
-	connect(searchServosDialog, SIGNAL(ping(quint8)), dynamixelBus, SLOT(ping(quint8)));
-	connect(dynamixelBus, SIGNAL(pinged(quint8, bool)), searchServosDialog, SLOT(pinged(quint8, bool)));
+	connect(searchServosDialog, SIGNAL(add(quint8)), dynamixelBus, SLOT(add(quint8)));
+	connect(dynamixelBus, SIGNAL(added(quint8, bool)), searchServosDialog, SLOT(added(quint8, bool)));
 	connect(searchServosDialog, SIGNAL(reset()), dynamixelBus, SLOT(reset()));
 	/* Help */
 	connect(ui->actionAbout_Dynamixel_Manager, SIGNAL(triggered()), this, SLOT(about()));

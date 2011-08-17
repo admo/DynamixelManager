@@ -11,7 +11,7 @@ pingAfterPinged(false) {
 
     ui->setupUi(this);
     ui->searchProgressBar->setMinimum(0);
-    //    ui->searchProgressBar->setMaximum(DYN_MAX_ID);
+    ui->searchProgressBar->setMaximum(0xFE);
     ui->servosTreeView->setModel(dB->getListModel());
 
     connect(ui->searchPushButton, SIGNAL(clicked()), this, SLOT(searchClicked()));
@@ -33,9 +33,9 @@ void SearchServosDialog::searchClicked() {
     TRI_LOG_STR("In SearchServosDialog::searchClicked()");
 
     pingAfterPinged = true;
-    searchingState();
-    emit reset();
-    emit ping(0x00);
+    toggleSearchingState();
+    //    emit reset();
+    emit add(0x00);
 
     TRI_LOG_STR("Out SearchServosDialog::searchClicked()");
 }
@@ -48,7 +48,7 @@ void SearchServosDialog::stopClicked() {
     TRI_LOG_STR("Out SearchServosDialog::stopClicked()");
 }
 
-void SearchServosDialog::pinged(quint8 id, bool success) {
+void SearchServosDialog::added(quint8 id, bool success) {
     TRI_LOG_STR("In SearchServosDialog::pinged()");
     TRI_LOG((int) id);
     TRI_LOG(success);
@@ -59,20 +59,20 @@ void SearchServosDialog::pinged(quint8 id, bool success) {
 
     ui->searchProgressBar->setValue(id);
 
-    if(id == 0xFF) {
-    pingAfterPinged = false;
+    if (id == 0xFE) {
+        pingAfterPinged = false;
     }
 
     if (pingAfterPinged) {
-        emit ping(++id);
+        emit add(++id);
     } else {
-        searchingState();
+        toggleSearchingState();
     }
 
     TRI_LOG_STR("Out SearchServosDialog::pinged()");
 }
 
-void SearchServosDialog::searchingState() {
+void SearchServosDialog::toggleSearchingState() {
     TRI_LOG_STR("In SearchServosDialog::searchingState()");
 
     ui->okPushButton->setEnabled(!pingAfterPinged);
