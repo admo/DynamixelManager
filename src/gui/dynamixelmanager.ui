@@ -34,6 +34,9 @@
             <height>24</height>
            </size>
           </property>
+          <property name="allColumnsShowFocus">
+           <bool>false</bool>
+          </property>
           <property name="expandsOnDoubleClick">
            <bool>false</bool>
           </property>
