@@ -187,15 +187,24 @@ private:
   int iSize() const {
     return dynamixelServos.size();
   }
+  void iAdd(const DynamixelServo& servo) {
+    dynamixelServos.append(servo);
+  }
   const DynamixelServo& iOperatorIndex(int i) const {
     return dynamixelServos[i];
   }
   int iGetServoIndex(quint8 id) const {
     return dynamixelServos.indexOf(DynamixelServo(id));
   }
+  DynamixelServo& iGetServo(quint8 id) {
+    return dynamixelServos[iGetServoIndex(id)];
+  }
   void iRemoveSevo(quint8 id) {
     int i = iGetServoIndex(id);
     dynamixelServos.remove(i);
+  }
+  void iSetStatusReturnLevel(quint8 id, quint8 statRetLev) {
+    iGetServo(id).statusReturnLevel = statRetLev;
   }
   
 public:
@@ -209,6 +218,11 @@ public:
   int size() const {
     QReadLocker locker(&accessLock);
     return iSize();
+  }
+  
+  void add(const DynamixelServo& servo) {
+    QWriteLocker locker(&accessLock);
+    iAdd(servo);
   }
   
   const DynamixelServo& operator [](int i) const {
@@ -230,8 +244,9 @@ public:
     iRemoveSevo(id);
   }
   
-  bool setStatusReturnLevel(quint8 id, quint8 statRetLev) {
-    ///// tutaj
+  void setStatusReturnLevel(quint8 id, quint8 statRetLev) {
+    QWriteLocker locker(&accessLock);
+    iSetStatusReturnLevel(id, statRetLev);
   }
 };
 

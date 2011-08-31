@@ -5,7 +5,6 @@
 
 #include <stdexcept>
 
-
 /* Implementacja modelu QAbstractItemModel */
 class DynamixelBus::DynamixelBusModel : public QAbstractItemModel {
 private:
@@ -139,8 +138,8 @@ runMutex(new QMutex), serialDevice(new AbstractSerial) {
   TRI_LOG_STR("In DynamixelBus::DynamixelBus()");
 
   dynamixelBusModel.reset(new DynamixelBusModel(*this));
-//  dynamixelControlTableRAM.reset(new DynamixelControlTableRAM());
-//  dynamixelControlTableROM.reset(new DynamixelControlTableROM());
+  //  dynamixelControlTableRAM.reset(new DynamixelControlTableRAM());
+  //  dynamixelControlTableROM.reset(new DynamixelControlTableROM());
 
   start();
   moveToThread(this); //Przenieś obsługę slotów do własnej pętli zdażeń
@@ -270,15 +269,16 @@ bool DynamixelBus::processCommunication(quint8 id, quint8 instruction, const QBy
 }
 
 quint8 DynamixelBus::computeResponseLength(quint8 id, quint8 instruction, const QByteArray& parameters) const {
+  quint8 statusReturnLevel(0);
 
-  if (instruction == 0x01) // Ping
-    return 6;
+  // Wymagane gdy instrukcja jest inna niz PING
+  if (instruction != 0x01) {
+    int i = dynamixelServos.getServoIndex(id);
+    if (i < 0) // Gdy nie ma serwa lub broadcast
+      return 0;
 
-  int i = dynamixelServos.getServoIndex(id);
-  if (i < 0) // Gdy nie ma serwa lub broadcast
-    return 0;
-  
-  quint8 statusReturnLevel = dynamixelServos[i].statusReturnLevel;
+    statusReturnLevel = dynamixelServos[i].statusReturnLevel;
+  }
 
   switch (instruction) {
     case 0x01: // ping
@@ -300,42 +300,28 @@ quint8 DynamixelBus::computeResponseLength(quint8 id, quint8 instruction, const 
 void DynamixelBus::add(quint8 id) {
   QMutexLocker locker(runMutex.get());
   TRI_LOG_STR("In DynamixelBus::add(quint8)");
-  if (dynamixelServos.isServo(id)) {
-    emit added(id, false);
-    return;
-  }
-
-  if (!ping(id)) {
+  if (dynamixelServos.isServo(id) || !ping(id)) {
     emit added(id, false);
     TRI_LOG_STR("Out DynamixelBus::add(quint8)");
     return;
   }
 
-  // Tutaj serwo na pewno istnieje, należy dodać je do modelu
-//  dynamixelServos.append(DynamixelServo(id, 0));
+  dynamixelServos.add(DynamixelServo(id, 2));
 
-//  ++dynamixelServos.last().statusReturnLevel;
-//  if (!read(id, 0x00, 1)) {
-//    --dynamixelServos[id].statusReturnLevel;
-//    emit added(id, true);
-//    TRI_LOG_STR("Out DynamixelBus::add(quint8)");
-//    return;
-//  }
-//
-//  ++dynamixelServos[id].statusReturnLevel;
-//  if (!action(id)) {
-//    --dynamixelServos[id].statusReturnLevel;
-//    emit added(id, true);
-//    TRI_LOG_STR("Out DynamixelBus::add(quint8)");
-//    return;
-//  }
-//  emit added(id, true);
+  if (!action(id)) {
+    dynamixelServos.setStatusReturnLevel(id, 1);
+    if (!read(id, 0x00, 1)) {
+      dynamixelServos.setStatusReturnLevel(id, 0);
+    }
+  }
+
+  emit added(id, true);
   TRI_LOG_STR("Out DynamixelBus::add(quint8)");
 }
 
 void DynamixelBus::remove(quint8 id) {
   dynamixelServos.removeServo(id);
-//  dynamixelBusModel->removeServo(id);
+  //  dynamixelBusModel->removeServo(id);
 }
 
 bool DynamixelBus::ping(quint8 id) {
