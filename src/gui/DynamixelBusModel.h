@@ -29,6 +29,8 @@ private slots:
   void dynamixelServosChanged(quint8,bool);
 
 public:
+  
+  enum { ServoRole = Qt::UserRole };
 
   DynamixelBusModel(const AbstractSerial&, const DynamixelServos&, QObject * parent = 0);
 

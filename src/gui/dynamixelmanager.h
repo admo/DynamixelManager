@@ -71,7 +71,7 @@ private slots:
 	void servosListCurrentIndexChanged(const QModelIndex &);
 	void tabWidgetCurrentIndexChanged(int);
 	void controlTableROMUpdated(const DynamixelControlTableROM*);
-	void controlTableRAMUpdated(const DynamixelControlTableRAM*);
+	void controlTableRAMUpdated(quint8);
 	void firstControlTableRAMUpdated(const DynamixelControlTableRAM*);
 
 	/* Zakładka Operation */

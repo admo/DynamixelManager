@@ -65,7 +65,7 @@ void DynamixelBus::openDevice(const QString& device, const QString& baud) {
 
   emit deviceOpened(serialDevice.isOpen());
 
-//  dynamixelBusModel->openDevice();
+  //  dynamixelBusModel->openDevice();
 }
 
 void DynamixelBus::closeDevice() {
@@ -78,7 +78,7 @@ void DynamixelBus::closeDevice() {
 
   dynamixelServos.clear();
 
-//  dynamixelBusModel->closeDevice();
+  //  dynamixelBusModel->closeDevice();
 
   TRI_LOG_STR("Out DynamixelBus::closeDevice()");
 }
@@ -107,11 +107,11 @@ bool DynamixelBus::processCommunication(quint8 id, quint8 instruction, const QBy
 
   i = std::copy(sendData.begin(), sendData.end(), i);
   *i++ = checksum(frame.begin() + 2, i);
-  
-//  foreach(char h, frame) {
-//    std::cout << std::hex << static_cast<short> (h) << " ";
-//  }
-//  std::cout << std::endl;
+
+  //  foreach(char h, frame) {
+  //    std::cout << std::hex << static_cast<short> (h) << " ";
+  //  }
+  //  std::cout << std::endl;
 
   serialDevice.write(frame);
 
@@ -211,9 +211,9 @@ bool DynamixelBus::read(quint8 id, quint8 address, quint8 length, QByteArray* da
 
 bool DynamixelBus::write(quint8 id, quint8 address, const QByteArray& data) {
   QByteArray params(1, address);
-  
+
   params.append(data);
-  
+
   return processCommunication(id, 0x03, params);
 }
 
@@ -223,12 +223,12 @@ bool DynamixelBus::action(quint8 id) {
 
 void DynamixelBus::setPosition(quint8 id, quint16 position) {
   QMutexLocker locker(&runMutex);
-  
+
   position = qToLittleEndian(position);
-  
-  bool ret = write(id, 0x1E, QByteArray::fromRawData((char*)&position, 2));
-  
-  if(!ret) {
+
+  bool ret = write(id, 0x1E, QByteArray::fromRawData((char*) &position, 2));
+
+  if (!ret) {
     emit communicationError(id);
   }
 }
@@ -237,20 +237,20 @@ void DynamixelBus::setSpeed(quint8 id, quint16 speed) {
   QMutexLocker locker(&runMutex);
 
   speed = qToLittleEndian(speed);
-  
-  bool ret = write(id, 0x20, QByteArray::fromRawData((char*)&speed, 2));
-  
-  if(!ret) {
+
+  bool ret = write(id, 0x20, QByteArray::fromRawData((char*) &speed, 2));
+
+  if (!ret) {
     emit communicationError(id);
   }
 }
 
 void DynamixelBus::setTorqueEnable(quint8 id, bool torque) {
   QMutexLocker locker(&runMutex);
-  
-  bool ret = write(id, 0x18, QByteArray::fromRawData((char*)&torque, 1));
-  
-  if(!ret) {
+
+  bool ret = write(id, 0x18, QByteArray::fromRawData((char*) &torque, 1));
+
+  if (!ret) {
     emit communicationError(id);
   }
 }
@@ -258,19 +258,19 @@ void DynamixelBus::setTorqueEnable(quint8 id, bool torque) {
 void DynamixelBus::setLEDEnable(quint8 id, bool led) {
   QMutexLocker locker(&runMutex);
 
-  bool ret = write(id, 0x19, QByteArray::fromRawData((char*)&led, 1));
-  
-  if(!ret) {
+  bool ret = write(id, 0x19, QByteArray::fromRawData((char*) &led, 1));
+
+  if (!ret) {
     emit communicationError(id);
   }
 }
 
 void DynamixelBus::setCWMargin(quint8 id, quint8 margin) {
   QMutexLocker locker(&runMutex);
-  
-  bool ret = write(id, 0x1A, QByteArray::fromRawData((char*)&margin, 1));
-  
-  if(!ret) {
+
+  bool ret = write(id, 0x1A, QByteArray::fromRawData((char*) &margin, 1));
+
+  if (!ret) {
     emit communicationError(id);
   }
 }
@@ -278,9 +278,9 @@ void DynamixelBus::setCWMargin(quint8 id, quint8 margin) {
 void DynamixelBus::setCCWMargin(quint8 id, quint8 margin) {
   QMutexLocker locker(&runMutex);
 
-  bool ret = write(id, 0x1B, QByteArray::fromRawData((char*)&margin, 1));
-  
-  if(!ret) {
+  bool ret = write(id, 0x1B, QByteArray::fromRawData((char*) &margin, 1));
+
+  if (!ret) {
     emit communicationError(id);
   }
 }
@@ -288,9 +288,9 @@ void DynamixelBus::setCCWMargin(quint8 id, quint8 margin) {
 void DynamixelBus::setCWSlope(quint8 id, quint8 slope) {
   QMutexLocker locker(&runMutex);
 
-  bool ret = write(id, 0x1C, QByteArray::fromRawData((char*)&slope, 1));
-  
-  if(!ret) {
+  bool ret = write(id, 0x1C, QByteArray::fromRawData((char*) &slope, 1));
+
+  if (!ret) {
     emit communicationError(id);
   }
 }
@@ -298,9 +298,9 @@ void DynamixelBus::setCWSlope(quint8 id, quint8 slope) {
 void DynamixelBus::setCCWSlope(quint8 id, quint8 slope) {
   QMutexLocker locker(&runMutex);
 
-  bool ret = write(id, 0x1D, QByteArray::fromRawData((char*)&slope, 1));
-  
-  if(!ret) {
+  bool ret = write(id, 0x1D, QByteArray::fromRawData((char*) &slope, 1));
+
+  if (!ret) {
     emit communicationError(id);
   }
 }
@@ -309,10 +309,10 @@ void DynamixelBus::setPunch(quint8 id, quint16 punch) {
   QMutexLocker locker(&runMutex);
 
   punch = qToLittleEndian(punch);
-  
-  bool ret = write(id, 0x30, QByteArray::fromRawData((char*)&punch, 2));
-  
-  if(!ret) {
+
+  bool ret = write(id, 0x30, QByteArray::fromRawData((char*) &punch, 2));
+
+  if (!ret) {
     emit communicationError(id);
   }
 }
@@ -321,10 +321,10 @@ void DynamixelBus::setTorqueLimit(quint8 id, quint16 limit) {
   QMutexLocker locker(&runMutex);
 
   limit = qToLittleEndian(limit);
-  
-  bool ret = write(id, 0x22, QByteArray::fromRawData((char*)&limit, 2));
-  
-  if(!ret) {
+
+  bool ret = write(id, 0x22, QByteArray::fromRawData((char*) &limit, 2));
+
+  if (!ret) {
     emit communicationError(id);
   }
 }
@@ -431,7 +431,16 @@ void DynamixelBus::updateControlTableROM(quint8 id) {
 
 void DynamixelBus::updateControlTableRAM(quint8 id) {
   QMutexLocker locker(&runMutex);
-  //	TRI_LOG_STR("In DynamixelBus::updateControlTableRAM(quint8)");
+  TRI_LOG_STR("In DynamixelBus::updateControlTableRAM(quint8)");
+
+  QByteArray data;
+
+  if (read(id, 0x18, 26, &data)) {
+    dynamixelServos.setRAMData(id, data);
+    emit controlTableRAMUpdated(id);
+  } else {
+    emit communicationError(id);
+  }
 
   //	QVector<quint8> data(DYN_RAM_TABLE_LENGTH, 0);
   //	int ret = dyn_read_data(dyn_param.get(), id, DYN_ADR_TORQUE_ENABLE,

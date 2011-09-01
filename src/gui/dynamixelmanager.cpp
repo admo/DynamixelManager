@@ -1,5 +1,6 @@
 #include "dynamixelmanager.h"
 #include "ui_dynamixelmanager.h"
+#include "DynamixelBusModel.h"
 #include <QtGui/QMessageBox>
 #include <QtDebug>
 #include "tri_logger.hpp"
@@ -54,8 +55,8 @@ DynamixelManager::DynamixelManager(QWidget *parent) :
 			this, SLOT(controlTableROMUpdated(const DynamixelControlTableROM *)));
 	connect(this, SIGNAL(updateControlTableRAM(quint8)),
 			dynamixelBus, SLOT(updateControlTableRAM(quint8)));
-	connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(const DynamixelControlTableRAM*)),
-			this, SLOT(controlTableRAMUpdated(const DynamixelControlTableRAM *)));
+	connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
+			this, SLOT(controlTableRAMUpdated(quint8)));
 
 	/* Program startuje zawsze z dialogiem do otwarcia portu */
 	/*openDevice();*/
@@ -202,7 +203,7 @@ void DynamixelManager::servosListCurrentIndexChanged(const QModelIndex &index) {
 	case 0: /* Operating */
 		connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(const DynamixelControlTableRAM *)),
 				this, SLOT(firstControlTableRAMUpdated(const DynamixelControlTableRAM *)));
-		emit updateControlTableRAM(index.data().toUInt());
+		emit updateControlTableRAM(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo>().id);
                 ui->tabWidget->setEnabled(true);
 		break;
 	case 1: /* Configuration */
@@ -276,18 +277,18 @@ void DynamixelManager::controlTableROMUpdated(const DynamixelControlTableROM *ro
 	TRI_LOG_STR("Out DynamixelManager::controlTableROMUpdated()");
 }
 
-void DynamixelManager::controlTableRAMUpdated(const DynamixelControlTableRAM *ram) {
+void DynamixelManager::controlTableRAMUpdated(quint8 id) {
 //	TRI_LOG_STR("In DynamixelManager::controlTableRAMUpdated()");
 
 	{
-		QReadLocker readLocker(&(ram->locker));
+//		QReadLocker readLocker(&(ram->locker));
 
 		/* Status */
-		ui->presentPositionLcdNumber->display(ram->presentPosition);
-		ui->presentSpeedLcdNumber->display(ram->presentSpeed);
-		ui->presentLoadLcdNumber->display(ram->presentLoad);
-		ui->presentVoltLcdNumber->display(ram->presentVolt);
-		ui->presentTempLcdNumber->display(ram->presentTemp);
+//		ui->presentPositionLcdNumber->display(ram->presentPosition);
+//		ui->presentSpeedLcdNumber->display(ram->presentSpeed);
+//		ui->presentLoadLcdNumber->display(ram->presentLoad);
+//		ui->presentVoltLcdNumber->display(ram->presentVolt);
+//		ui->presentTempLcdNumber->display(ram->presentTemp);
 //		ui->movingLcdNumber->display(ram->moving);
 //		ui->lockLcdNumber->display(ram->lock);
 

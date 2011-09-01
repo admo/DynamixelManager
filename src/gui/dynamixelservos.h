@@ -88,6 +88,11 @@ public:
     QWriteLocker locker(&accessLock);
     iSetStatusReturnLevel(id, statRetLev);
   }
+  
+  void setRAMData(quint8 id, const QByteArray& data) {
+    QWriteLocker locker(&accessLock);
+    iGetServo(id).setRAMData(data);
+  }
 };
 
 #endif	/* DYNAMIXELSERVOS_H */

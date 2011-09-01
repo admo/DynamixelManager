@@ -23,8 +23,6 @@
 
 #include <termios.h>
 
-
-
 /* Implementacja struktury DynamixelStatus */
 struct DynamixelControlTableROM {
   mutable QReadWriteLock locker;
@@ -233,7 +231,7 @@ signals:
   void removed(quint8, bool);
 
   void controlTableROMUpdated(const DynamixelControlTableROM*);
-  void controlTableRAMUpdated(const DynamixelControlTableRAM*);
+  void controlTableRAMUpdated(quint8);
 
   void communicationError(quint8);
 };

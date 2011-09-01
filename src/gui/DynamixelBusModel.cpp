@@ -70,8 +70,6 @@ int DynamixelBusModel::rowCount(const QModelIndex& parent) const {
       return 1;
     case IndexTypeDeviceName:
       return dynamixelServos.size();
-      //		case IndexTypeBaudRate:
-      //			return dyn_id.size();
     case IndexTypeID:
       return 0;
   }
@@ -85,8 +83,6 @@ QVariant DynamixelBusModel::data(const QModelIndex& index, int role) const {
       switch (indexType) {
         case IndexTypeDeviceName:
           return QString("%1@%2").arg(serialDevice.deviceName()).arg(serialDevice.baudRate());
-          //			case IndexTypeBaudRate:
-          //				return QString::number(baudrate);
         case IndexTypeID:
           return QString("ID:%1").arg(dynamixelServos[index.row()].id);
       }
@@ -96,11 +92,19 @@ QVariant DynamixelBusModel::data(const QModelIndex& index, int role) const {
       switch (indexType) {
         case IndexTypeDeviceName:
           return QIcon(":/icons/resources/serial.png");
-          //			case IndexTypeBaudRate:
-          //				return QIcon(":/icons/baudrate.png");
         case IndexTypeID:
           return QIcon(":/icons/resources/servo.png");
-          ;
+      }
+    }
+    case ServoRole:
+    {
+      switch (indexType) {
+        case IndexTypeDeviceName:
+          return QVariant();
+        case IndexTypeID:
+          QVariant var;
+          var.setValue(dynamixelServos[index.row()]);
+          return var;
       }
     }
     default:
