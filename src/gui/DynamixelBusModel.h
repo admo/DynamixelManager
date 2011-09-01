@@ -8,21 +8,30 @@
 #ifndef DYNAMIXELBUSMODEL_H
 #define	DYNAMIXELBUSMODEL_H
 
+#include "abstractserial.h"
+#include "dynamixelservos.h"
+
 #include <QAbstractItemModel>
 
 class DynamixelBusModel : public QAbstractItemModel {
+  Q_OBJECT
 private:
   bool opened;
+  const AbstractSerial& serialDevice;
+  const DynamixelServos& dynamixelServos;
 
   enum IndexType {
     IndexTypeRoot, IndexTypeDeviceName, IndexTypeBaudRate, IndexTypeID
   };
 
+private slots:
+  void deviceOpened(bool);
+  void deviceClosed();
+  void dynamixelServosChanged(quint8,bool);
+
 public:
 
-  DynamixelBusModel() :
-  opened(false) {//  opened(false), deviceName(), baudrate(), dynamixelBus(dB) {
-  }
+  DynamixelBusModel(const AbstractSerial&, const DynamixelServos&, QObject * parent = 0);
 
   QModelIndex index(int row, int column, const QModelIndex &parent) const;
 

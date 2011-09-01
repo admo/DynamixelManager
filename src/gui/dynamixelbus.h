@@ -3,7 +3,6 @@
 
 #include "dynamixelservo.h"
 #include "dynamixelservos.h"
-#include "tri_logger.hpp"
 #include "abstractserial.h"
 
 #include <QtGlobal>
@@ -166,9 +165,9 @@ class DynamixelBus : public QThread {
   DynamixelServos dynamixelServos;
 
   // Mutex chroniący sloty
-  boost::scoped_ptr<QMutex> runMutex;
+  QMutex runMutex;
   // Urządzenie szeregowe
-  boost::scoped_ptr<AbstractSerial> serialDevice;
+  AbstractSerial serialDevice;
 
   // Model widoku DynamixelServos
   boost::scoped_ptr<QAbstractItemModel> dynamixelBusModel;

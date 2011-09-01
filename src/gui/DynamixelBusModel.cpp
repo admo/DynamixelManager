@@ -6,9 +6,21 @@
  */
 
 #include "DynamixelBusModel.h"
+#include "tri_logger.hpp"
 
 #include <QIcon>
 #include <QString>
+#include <sys/socket.h>
+
+DynamixelBusModel::DynamixelBusModel(const AbstractSerial& serial, const DynamixelServos& servos, QObject* parent) :
+serialDevice(serial), dynamixelServos(servos), opened(false) {//  opened(false), deviceName(), baudrate(), dynamixelBus(dB) {
+  if (parent) {
+    connect(parent, SIGNAL(deviceOpened(bool)), this, SLOT(deviceOpened(bool)));
+    connect(parent, SIGNAL(deviceClosed()), this, SLOT(deviceClosed()));
+    connect(parent, SIGNAL(added(quint8,bool)), this, SLOT(dynamixelServosChanged(quint8, bool)));
+    connect(parent, SIGNAL(removed(quint8,bool)), this, SLOT(dynamixelServosChanged(quint8, bool)));
+  }
+}
 
 QModelIndex DynamixelBusModel::index(int row, int column, const QModelIndex& parent) const {
   if (!opened || row < 0 || column < 0)
@@ -57,7 +69,7 @@ int DynamixelBusModel::rowCount(const QModelIndex& parent) const {
     case IndexTypeRoot:
       return 1;
     case IndexTypeDeviceName:
-      //        return dynamixelBus.getDynamixelServos().size();
+      return dynamixelServos.size();
       //		case IndexTypeBaudRate:
       //			return dyn_id.size();
     case IndexTypeID:
@@ -72,12 +84,11 @@ QVariant DynamixelBusModel::data(const QModelIndex& index, int role) const {
     {
       switch (indexType) {
         case IndexTypeDeviceName:
-          //            return QString("%1@%2bps").arg(deviceName).arg(baudrate);
+          return QString("%1@%2").arg(serialDevice.deviceName()).arg(serialDevice.baudRate());
           //			case IndexTypeBaudRate:
           //				return QString::number(baudrate);
         case IndexTypeID:
-          return QString("aaa");
-          //            return QString("ID:%1").arg(dynamixelBus.getDynamixelServos()[index.row()].id);
+          return QString("ID:%1").arg(dynamixelServos[index.row()].id);
       }
     }
     case Qt::DecorationRole:
@@ -94,5 +105,24 @@ QVariant DynamixelBusModel::data(const QModelIndex& index, int role) const {
     }
     default:
       return QVariant();
+  }
+}
+
+void DynamixelBusModel::deviceOpened(bool isOpened) {
+  opened = isOpened;
+
+  if (isOpened) {
+    reset();
+  }
+}
+
+void DynamixelBusModel::deviceClosed() {
+  opened = false;
+  reset();
+}
+
+void DynamixelBusModel::dynamixelServosChanged(quint8 id, bool isChanged) {
+  if (isChanged) {
+    emit layoutChanged();
   }
 }

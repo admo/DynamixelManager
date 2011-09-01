@@ -1,14 +1,11 @@
-
+#include "tri_logger.hpp"
 #include "DynamixelBusModel.h"
 #include "dynamixelbus.h"
 
 #include <stdexcept>
 
-/* Implementacja modelu QAbstractItemModel */
-
-
 DynamixelBus::DynamixelBus() :
-runMutex(new QMutex), serialDevice(new AbstractSerial), dynamixelBusModel(new DynamixelBusModel()) {
+dynamixelBusModel(new DynamixelBusModel(serialDevice, dynamixelServos, this)) {
   TRI_LOG_STR("In DynamixelBus::DynamixelBus()");
 
   //  dynamixelControlTableRAM.reset(new DynamixelControlTableRAM());
@@ -24,7 +21,7 @@ DynamixelBus::~DynamixelBus() {
   TRI_LOG_STR("In DynamixelBus::~DynamixelBus()");
 
   {
-    QMutexLocker locker(runMutex.get());
+    QMutexLocker locker(&runMutex);
     quit();
   }
   wait();
@@ -43,20 +40,20 @@ void DynamixelBus::run() {
 }
 
 void DynamixelBus::openDevice(const QString& device, const QString& baud) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
 
-  serialDevice->setDeviceName(device);
-  if (serialDevice->open(AbstractSerial::ReadWrite | AbstractSerial::Unbuffered)) {
+  serialDevice.setDeviceName(device);
+  if (serialDevice.open(AbstractSerial::ReadWrite | AbstractSerial::Unbuffered)) {
     try {
-      if (!serialDevice->setBaudRate(baud))
+      if (!serialDevice.setBaudRate(baud))
         throw std::runtime_error("Set baud rate error.");
-      if (!serialDevice->setDataBits(AbstractSerial::DataBits8))
+      if (!serialDevice.setDataBits(AbstractSerial::DataBits8))
         throw std::runtime_error("Set data bits error.");
-      if (!serialDevice->setParity(AbstractSerial::ParityNone))
+      if (!serialDevice.setParity(AbstractSerial::ParityNone))
         throw std::runtime_error("Set parity error.");
-      if (!serialDevice->setStopBits(AbstractSerial::StopBits1))
+      if (!serialDevice.setStopBits(AbstractSerial::StopBits1))
         throw std::runtime_error("Set stop bits error.");
-      if (!serialDevice->setFlowControl(AbstractSerial::FlowControlOff))
+      if (!serialDevice.setFlowControl(AbstractSerial::FlowControlOff))
         throw std::runtime_error("Set flow error.");
     } catch (std::runtime_error& err) {
       TRI_LOG_STR(err.what());
@@ -64,16 +61,16 @@ void DynamixelBus::openDevice(const QString& device, const QString& baud) {
     }
   }
 
-  emit deviceOpened(serialDevice->isOpen());
+  emit deviceOpened(serialDevice.isOpen());
 
 //  dynamixelBusModel->openDevice();
 }
 
 void DynamixelBus::closeDevice() {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::closeDevice()");
 
-  serialDevice->close();
+  serialDevice.close();
 
   emit deviceClosed();
 
@@ -109,14 +106,14 @@ bool DynamixelBus::processCommunication(quint8 id, quint8 instruction, const QBy
   i = std::copy(sendData.begin(), sendData.end(), i);
   *i++ = checksum(frame.begin() + 2, i);
 
-  serialDevice->write(frame);
+  serialDevice.write(frame);
 
   quint8 responseLength = computeResponseLength(id, instruction, sendData);
   quint8 bytesRead = 0;
 
   frame.clear();
-  while (responseLength > bytesRead && serialDevice->waitForReadyRead(200))
-    bytesRead = frame.append(serialDevice->read(responseLength - bytesRead)).size();
+  while (responseLength > bytesRead && serialDevice.waitForReadyRead(200))
+    bytesRead = frame.append(serialDevice.read(responseLength - bytesRead)).size();
 
   // Sprawdzic checksum
 
@@ -172,7 +169,7 @@ quint8 DynamixelBus::computeResponseLength(quint8 id, quint8 instruction, const 
 }
 
 void DynamixelBus::add(quint8 id) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::add(quint8)");
   TRI_LOG_FN(ping(id));
   if (dynamixelServos.isServo(id) || !ping(id)) {
@@ -196,7 +193,7 @@ void DynamixelBus::add(quint8 id) {
 
 void DynamixelBus::remove(quint8 id) {
   dynamixelServos.removeServo(id);
-  //  dynamixelBusModel->removeServo(id);
+  emit removed(id, true);
 }
 
 bool DynamixelBus::ping(quint8 id) {
@@ -215,7 +212,7 @@ bool DynamixelBus::action(quint8 id) {
 }
 
 void DynamixelBus::setPosition(quint8 id, quint16 position) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setPosition(quint8,quint16)");
 
   //	int ret = dyn_set_position(dyn_param.get(), id, position);
@@ -226,7 +223,7 @@ void DynamixelBus::setPosition(quint8 id, quint16 position) {
 }
 
 void DynamixelBus::setSpeed(quint8 id, quint16 speed) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setSpeed(quint8,quint16)");
 
   //	int ret = dyn_set_speed(dyn_param.get(), id, speed);
@@ -237,7 +234,7 @@ void DynamixelBus::setSpeed(quint8 id, quint16 speed) {
 }
 
 void DynamixelBus::setTorqueEnable(quint8 id, bool torque) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setTorqueEnable(quint8,bool)");
 
   //	int ret = dyn_set_torque(dyn_param.get(), id, torque);
@@ -248,7 +245,7 @@ void DynamixelBus::setTorqueEnable(quint8 id, bool torque) {
 }
 
 void DynamixelBus::setLEDEnable(quint8 id, bool led) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setLEDEnable(quint8,bool)");
 
   //	int ret = dyn_set_led(dyn_param.get(), id, led);
@@ -259,7 +256,7 @@ void DynamixelBus::setLEDEnable(quint8 id, bool led) {
 }
 
 void DynamixelBus::setCWMargin(quint8 id, quint8 margin) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setCWMargin(quint8,quint8)");
 
   //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_CW_COMPLIANCE_MARGIN, 1, &margin);
@@ -270,7 +267,7 @@ void DynamixelBus::setCWMargin(quint8 id, quint8 margin) {
 }
 
 void DynamixelBus::setCCWMargin(quint8 id, quint8 margin) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setCCWMargin(quint8,quint8)");
 
   //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_CCW_COMPLIANCE_MARGIN, 1, &margin);
@@ -281,7 +278,7 @@ void DynamixelBus::setCCWMargin(quint8 id, quint8 margin) {
 }
 
 void DynamixelBus::setCWSlope(quint8 id, quint8 slope) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setCWSlope(quint8,quint8)");
 
   //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_CW_COMPLIANCE_SLOPE, 1, &slope);
@@ -292,7 +289,7 @@ void DynamixelBus::setCWSlope(quint8 id, quint8 slope) {
 }
 
 void DynamixelBus::setCCWSlope(quint8 id, quint8 slope) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setCCWSlope(quint8,quint8)");
 
   //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_CCW_COMPLIANCE_SLOPE, 1, &slope);
@@ -303,7 +300,7 @@ void DynamixelBus::setCCWSlope(quint8 id, quint8 slope) {
 }
 
 void DynamixelBus::setPunch(quint8 id, quint16 punch) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setPunch(quint8,quint16)");
 
   //	int ret = dyn_set_punch(dyn_param.get(), id, punch);
@@ -314,7 +311,7 @@ void DynamixelBus::setPunch(quint8 id, quint16 punch) {
 }
 
 void DynamixelBus::setTorqueLimit(quint8 id, quint16 limit) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setTorqueLimit(quint8,quint16)");
 
   //	int ret = dyn_set_torque_limit(dyn_param.get(), id, limit);
@@ -325,7 +322,7 @@ void DynamixelBus::setTorqueLimit(quint8 id, quint16 limit) {
 }
 
 void DynamixelBus::setConfiguration(quint8 id, boost::shared_ptr<DynamixelControlTableROM> rom) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setConfiguration(quint8,boost::shared_ptr<DynamixelControlTableROM>)");
 
   //	quint8 ledError =
@@ -372,7 +369,7 @@ void DynamixelBus::setConfiguration(quint8 id, boost::shared_ptr<DynamixelContro
 }
 
 void DynamixelBus::setID(quint8 id, quint8 newID) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   bool force = false;
   TRI_LOG_STR("In DynamixelBus::setID(quint8,quint8)");
 
@@ -396,7 +393,7 @@ void DynamixelBus::setID(quint8 id, quint8 newID) {
 }
 
 void DynamixelBus::setReturnLevel(quint8 id, quint8 returnLevel) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setReturnLevel(quint8,quint8)");
 
   //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_STATUS_RETURN_LEVEL, 1, &returnLevel);
@@ -409,7 +406,7 @@ void DynamixelBus::setReturnLevel(quint8 id, quint8 returnLevel) {
 }
 
 void DynamixelBus::updateControlTableROM(quint8 id) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::updateControlTableROM(quint8)");
 
   //	QVector<quint8> data(DYN_ROM_TABLE_LENGTH, 0);
@@ -425,7 +422,7 @@ void DynamixelBus::updateControlTableROM(quint8 id) {
 }
 
 void DynamixelBus::updateControlTableRAM(quint8 id) {
-  QMutexLocker locker(runMutex.get());
+  QMutexLocker locker(&runMutex);
   //	TRI_LOG_STR("In DynamixelBus::updateControlTableRAM(quint8)");
 
   //	QVector<quint8> data(DYN_RAM_TABLE_LENGTH, 0);
