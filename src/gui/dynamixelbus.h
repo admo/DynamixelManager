@@ -3,12 +3,13 @@
 
 #include "dynamixelservo.h"
 #include "dynamixelservos.h"
+#include "tri_logger.hpp"
+#include "abstractserial.h"
 
+#include <QtGlobal>
 #include <QThread>
-#include <QMap>
 #include <QString>
 #include <QMutex>
-#include <QWaitCondition>
 #include <QAbstractItemModel>
 #include <QReadWriteLock>
 #include <QReadLocker>
@@ -23,9 +24,7 @@
 
 #include <termios.h>
 
-#include "tri_logger.hpp"
 
-#include "abstractserial.h"
 
 /* Implementacja struktury DynamixelStatus */
 struct DynamixelControlTableROM {

@@ -1,5 +1,6 @@
+
+
 #include "dynamixelbus.h"
-#include "tri_logger.hpp"
 
 #include <QIcon>
 
@@ -8,11 +9,7 @@
 /* Implementacja modelu QAbstractItemModel */
 class DynamixelBus::DynamixelBusModel : public QAbstractItemModel {
 private:
-  DynamixelServos servoList;
   bool opened;
-  QString deviceName;
-  QString baudrate;
-  const DynamixelBus& dynamixelBus;
 
   enum IndexType {
     IndexTypeRoot, IndexTypeDeviceName, IndexTypeBaudRate, IndexTypeID
@@ -21,7 +18,9 @@ private:
 public:
 
   DynamixelBusModel(const DynamixelBus& dB) :
-  opened(false), deviceName(), baudrate(), dynamixelBus(dB) {
+  opened(false)
+  {//  opened(false), deviceName(), baudrate(), dynamixelBus(dB) {
+  
     TRI_LOG_STR("In DynamixelBusModel::DynamixelBusModel()");
   }
 
@@ -219,7 +218,7 @@ quint8 DynamixelBus::checksum(const QByteArray::const_iterator& begin, const QBy
 
   return ~chksum;
 }
-
+#include <iostream>
 bool DynamixelBus::processCommunication(quint8 id, quint8 instruction, const QByteArray& sendData, QByteArray* recvData) {
   if (6 + sendData.size() > 143)
     return false;
@@ -246,10 +245,11 @@ bool DynamixelBus::processCommunication(quint8 id, quint8 instruction, const QBy
     bytesRead = frame.append(serialDevice->read(responseLength - bytesRead)).size();
 
   // Sprawdzic checksum
-  //    foreach(char h, frame) {
-  //        std::cout << std::hex << static_cast<short>(h) << " ";
-  //    }
-  //    std::cout << std::endl;
+
+//  foreach(char h, frame) {
+//    std::cout << std::hex << static_cast<short> (h) << " ";
+//  }
+//  std::cout << std::endl;
 
   if (bytesRead != responseLength)
     return false;
@@ -300,6 +300,7 @@ quint8 DynamixelBus::computeResponseLength(quint8 id, quint8 instruction, const 
 void DynamixelBus::add(quint8 id) {
   QMutexLocker locker(runMutex.get());
   TRI_LOG_STR("In DynamixelBus::add(quint8)");
+  TRI_LOG_FN(ping(id));
   if (dynamixelServos.isServo(id) || !ping(id)) {
     emit added(id, false);
     TRI_LOG_STR("Out DynamixelBus::add(quint8)");
