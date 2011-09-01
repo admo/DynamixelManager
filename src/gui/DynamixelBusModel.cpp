@@ -61,7 +61,7 @@ QModelIndex DynamixelBusModel::parent(const QModelIndex& child) const {
 }
 
 int DynamixelBusModel::rowCount(const QModelIndex& parent) const {
-  if (!opened)
+  if (!serialDevice.isOpen())
     return 0;
 
   IndexType indexType = parent.isValid() ? static_cast<IndexType> (parent.internalId()) : IndexTypeRoot;
@@ -95,11 +95,11 @@ QVariant DynamixelBusModel::data(const QModelIndex& index, int role) const {
     {
       switch (indexType) {
         case IndexTypeDeviceName:
-          return QIcon(":/icons/serial.png");
+          return QIcon(":/icons/resources/serial.png");
           //			case IndexTypeBaudRate:
           //				return QIcon(":/icons/baudrate.png");
         case IndexTypeID:
-          return QIcon(":/icons/servo.png");
+          return QIcon(":/icons/resources/servo.png");
           ;
       }
     }
@@ -109,19 +109,17 @@ QVariant DynamixelBusModel::data(const QModelIndex& index, int role) const {
 }
 
 void DynamixelBusModel::deviceOpened(bool isOpened) {
-  opened = isOpened;
 
-  if (isOpened) {
+  if (serialDevice.isOpen()) {
     reset();
   }
 }
 
 void DynamixelBusModel::deviceClosed() {
-  opened = false;
   reset();
 }
 
-void DynamixelBusModel::dynamixelServosChanged(quint8 id, bool isChanged) {
+void DynamixelBusModel::dynamixelServosChanged(quint8, bool isChanged) {
   if (isChanged) {
     emit layoutChanged();
   }

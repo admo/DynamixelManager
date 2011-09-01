@@ -34,7 +34,7 @@ void SearchServosDialog::searchClicked() {
 
     pingAfterPinged = true;
     toggleSearchingState();
-    //    emit reset();
+    ui->servosTreeView->expandAll();
     emit add(0x00);
 
     TRI_LOG_STR("Out SearchServosDialog::searchClicked()");

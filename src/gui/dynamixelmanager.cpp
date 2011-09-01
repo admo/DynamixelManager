@@ -142,6 +142,8 @@ void DynamixelManager::deviceOpened(bool opened) {
 	} else {
 		QMessageBox::warning(this, tr("Warning"), tr("Błąd"));
 	}
+        
+        ui->servosTreeView->expandAll();
 
 	TRI_LOG_STR("Out DynamixelManager::deviceOpened(bool)");
 }
