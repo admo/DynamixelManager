@@ -16,7 +16,6 @@
 class DynamixelBusModel : public QAbstractItemModel {
   Q_OBJECT
 private:
-  bool opened;
   const AbstractSerial& serialDevice;
   const DynamixelServos& dynamixelServos;
 

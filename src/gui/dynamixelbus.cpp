@@ -2,6 +2,8 @@
 #include "DynamixelBusModel.h"
 #include "dynamixelbus.h"
 
+#include <QtEndian>
+
 #include <stdexcept>
 
 DynamixelBus::DynamixelBus() :
@@ -105,6 +107,11 @@ bool DynamixelBus::processCommunication(quint8 id, quint8 instruction, const QBy
 
   i = std::copy(sendData.begin(), sendData.end(), i);
   *i++ = checksum(frame.begin() + 2, i);
+  
+//  foreach(char h, frame) {
+//    std::cout << std::hex << static_cast<short> (h) << " ";
+//  }
+//  std::cout << std::endl;
 
   serialDevice.write(frame);
 
@@ -116,11 +123,6 @@ bool DynamixelBus::processCommunication(quint8 id, quint8 instruction, const QBy
     bytesRead = frame.append(serialDevice.read(responseLength - bytesRead)).size();
 
   // Sprawdzic checksum
-
-//  foreach(char h, frame) {
-//    std::cout << std::hex << static_cast<short> (h) << " ";
-//  }
-//  std::cout << std::endl;
 
   if (bytesRead != responseLength)
     return false;
@@ -207,6 +209,14 @@ bool DynamixelBus::read(quint8 id, quint8 address, quint8 length, QByteArray* da
   return processCommunication(id, 0x02, params, data);
 }
 
+bool DynamixelBus::write(quint8 id, quint8 address, const QByteArray& data) {
+  QByteArray params(1, address);
+  
+  params.append(data);
+  
+  return processCommunication(id, 0x03, params);
+}
+
 bool DynamixelBus::action(quint8 id) {
   return processCommunication(id, 0x05);
 }
@@ -214,10 +224,14 @@ bool DynamixelBus::action(quint8 id) {
 void DynamixelBus::setPosition(quint8 id, quint16 position) {
   QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setPosition(quint8,quint16)");
-
-  //	int ret = dyn_set_position(dyn_param.get(), id, position);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
+  
+  position = qToLittleEndian(position);
+  
+  bool ret = write(id, 0x1E, QByteArray::fromRawData((char*)&position, 2));
+  
+  if(!ret) {
+    //Trzeba cos zrobic
+  }
 
   TRI_LOG_STR("Out DynamixelBus::setPosition(quint8,quint16)");
 }

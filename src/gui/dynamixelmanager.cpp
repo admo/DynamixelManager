@@ -192,7 +192,7 @@ void DynamixelManager::about() {
 }
 
 void DynamixelManager::servosListCurrentIndexChanged(const QModelIndex &index) {
-	TRI_LOG_STR("In DynamixelManager::changeObservedServo()");
+	TRI_LOG_STR("In DynamixelManager::servosListCurrentIndexChanged()");
 
 	/* Jeśli nie ma wybranego serwa, wtedy nic nie musimy robić */
 	if(!index.isValid())
@@ -203,6 +203,7 @@ void DynamixelManager::servosListCurrentIndexChanged(const QModelIndex &index) {
 		connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(const DynamixelControlTableRAM *)),
 				this, SLOT(firstControlTableRAMUpdated(const DynamixelControlTableRAM *)));
 		emit updateControlTableRAM(index.data().toUInt());
+                ui->tabWidget->setEnabled(true);
 		break;
 	case 1: /* Configuration */
 		emit updateControlTableROM(index.data().toUInt());
@@ -210,7 +211,7 @@ void DynamixelManager::servosListCurrentIndexChanged(const QModelIndex &index) {
 	default:
 		break;
 	}
-	TRI_LOG_STR("Out DynamixelManager::changeObservedServo()");
+	TRI_LOG_STR("Out DynamixelManager::servosListCurrentIndexChanged()");
 }
 
 void DynamixelManager::tabWidgetCurrentIndexChanged(int index) {

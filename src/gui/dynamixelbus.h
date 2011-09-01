@@ -184,6 +184,7 @@ class DynamixelBus : public QThread {
   // Basic dynamixel operations
   bool ping(quint8);
   bool read(quint8 id, quint8 address, quint8 length, QByteArray* data = NULL);
+  bool write(quint8 id, quint8 address, const QByteArray& data);
   bool action(quint8 id);
 
 protected:

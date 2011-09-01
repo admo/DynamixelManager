@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 
 DynamixelBusModel::DynamixelBusModel(const AbstractSerial& serial, const DynamixelServos& servos, QObject* parent) :
-serialDevice(serial), dynamixelServos(servos), opened(false) {//  opened(false), deviceName(), baudrate(), dynamixelBus(dB) {
+serialDevice(serial), dynamixelServos(servos) {//  opened(false), deviceName(), baudrate(), dynamixelBus(dB) {
   if (parent) {
     connect(parent, SIGNAL(deviceOpened(bool)), this, SLOT(deviceOpened(bool)));
     connect(parent, SIGNAL(deviceClosed()), this, SLOT(deviceClosed()));
@@ -23,7 +23,7 @@ serialDevice(serial), dynamixelServos(servos), opened(false) {//  opened(false),
 }
 
 QModelIndex DynamixelBusModel::index(int row, int column, const QModelIndex& parent) const {
-  if (!opened || row < 0 || column < 0)
+  if (!serialDevice.isOpen() || row < 0 || column < 0)
     return QModelIndex();
 
   IndexType indexType = parent.isValid() ? static_cast<IndexType> (parent.internalId()) : IndexTypeRoot;
@@ -42,7 +42,7 @@ QModelIndex DynamixelBusModel::index(int row, int column, const QModelIndex& par
 }
 
 QModelIndex DynamixelBusModel::parent(const QModelIndex& child) const {
-  if (!opened)
+  if (!serialDevice.isOpen())
     return QModelIndex();
 
   IndexType indexType = child.isValid() ? static_cast<IndexType> (child.internalId()) : IndexTypeRoot;
@@ -109,7 +109,6 @@ QVariant DynamixelBusModel::data(const QModelIndex& index, int role) const {
 }
 
 void DynamixelBusModel::deviceOpened(bool isOpened) {
-
   if (serialDevice.isOpen()) {
     reset();
   }
