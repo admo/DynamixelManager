@@ -91,7 +91,7 @@ quint8 DynamixelBus::checksum(const QByteArray::const_iterator& begin, const QBy
 
   return ~chksum;
 }
-#include <iostream>
+
 bool DynamixelBus::processCommunication(quint8 id, quint8 instruction, const QByteArray& sendData, QByteArray* recvData) {
   if (6 + sendData.size() > 143)
     return false;
@@ -223,116 +223,110 @@ bool DynamixelBus::action(quint8 id) {
 
 void DynamixelBus::setPosition(quint8 id, quint16 position) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setPosition(quint8,quint16)");
   
   position = qToLittleEndian(position);
   
   bool ret = write(id, 0x1E, QByteArray::fromRawData((char*)&position, 2));
   
   if(!ret) {
-    //Trzeba cos zrobic
+    emit communicationError(id);
   }
-
-  TRI_LOG_STR("Out DynamixelBus::setPosition(quint8,quint16)");
 }
 
 void DynamixelBus::setSpeed(quint8 id, quint16 speed) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setSpeed(quint8,quint16)");
 
-  //	int ret = dyn_set_speed(dyn_param.get(), id, speed);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::setSpeed(quint8,quint16)");
+  speed = qToLittleEndian(speed);
+  
+  bool ret = write(id, 0x20, QByteArray::fromRawData((char*)&speed, 2));
+  
+  if(!ret) {
+    emit communicationError(id);
+  }
 }
 
 void DynamixelBus::setTorqueEnable(quint8 id, bool torque) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setTorqueEnable(quint8,bool)");
-
-  //	int ret = dyn_set_torque(dyn_param.get(), id, torque);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::setTorqueEnable(quint8,bool)");
+  
+  bool ret = write(id, 0x18, QByteArray::fromRawData((char*)&torque, 1));
+  
+  if(!ret) {
+    emit communicationError(id);
+  }
 }
 
 void DynamixelBus::setLEDEnable(quint8 id, bool led) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setLEDEnable(quint8,bool)");
 
-  //	int ret = dyn_set_led(dyn_param.get(), id, led);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::setLEDEnable(quint8,bool)");
+  bool ret = write(id, 0x19, QByteArray::fromRawData((char*)&led, 1));
+  
+  if(!ret) {
+    emit communicationError(id);
+  }
 }
 
 void DynamixelBus::setCWMargin(quint8 id, quint8 margin) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setCWMargin(quint8,quint8)");
-
-  //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_CW_COMPLIANCE_MARGIN, 1, &margin);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::setCWMargin(quint8,quint8)");
+  
+  bool ret = write(id, 0x1A, QByteArray::fromRawData((char*)&margin, 1));
+  
+  if(!ret) {
+    emit communicationError(id);
+  }
 }
 
 void DynamixelBus::setCCWMargin(quint8 id, quint8 margin) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setCCWMargin(quint8,quint8)");
 
-  //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_CCW_COMPLIANCE_MARGIN, 1, &margin);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::setCCWMargin(quint8,quint8)");
+  bool ret = write(id, 0x1B, QByteArray::fromRawData((char*)&margin, 1));
+  
+  if(!ret) {
+    emit communicationError(id);
+  }
 }
 
 void DynamixelBus::setCWSlope(quint8 id, quint8 slope) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setCWSlope(quint8,quint8)");
 
-  //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_CW_COMPLIANCE_SLOPE, 1, &slope);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::setCWSlope(quint8,quint8)");
+  bool ret = write(id, 0x1C, QByteArray::fromRawData((char*)&slope, 1));
+  
+  if(!ret) {
+    emit communicationError(id);
+  }
 }
 
 void DynamixelBus::setCCWSlope(quint8 id, quint8 slope) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setCCWSlope(quint8,quint8)");
 
-  //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_CCW_COMPLIANCE_SLOPE, 1, &slope);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::setCCWSlope(quint8,quint8)");
+  bool ret = write(id, 0x1D, QByteArray::fromRawData((char*)&slope, 1));
+  
+  if(!ret) {
+    emit communicationError(id);
+  }
 }
 
 void DynamixelBus::setPunch(quint8 id, quint16 punch) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setPunch(quint8,quint16)");
 
-  //	int ret = dyn_set_punch(dyn_param.get(), id, punch);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::setPunch(quint8,quint16)");
+  punch = qToLittleEndian(punch);
+  
+  bool ret = write(id, 0x30, QByteArray::fromRawData((char*)&punch, 2));
+  
+  if(!ret) {
+    emit communicationError(id);
+  }
 }
 
 void DynamixelBus::setTorqueLimit(quint8 id, quint16 limit) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setTorqueLimit(quint8,quint16)");
 
-  //	int ret = dyn_set_torque_limit(dyn_param.get(), id, limit);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::setTorqueLimit(quint8,quint16)");
+  limit = qToLittleEndian(limit);
+  
+  bool ret = write(id, 0x22, QByteArray::fromRawData((char*)&limit, 2));
+  
+  if(!ret) {
+    emit communicationError(id);
+  }
 }
 
 void DynamixelBus::setConfiguration(quint8 id, boost::shared_ptr<DynamixelControlTableROM> rom) {
