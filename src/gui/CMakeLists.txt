@@ -25,6 +25,7 @@ add_definitions (${QT_DEFINITIONS})
 # Applicalion sources files.
 set (APP_SRCS
 	dynamixelbus.cpp
+        DynamixelBusModel.cpp
 	searchservosdialog.cpp
 	selectserialport.cpp
 	dynamixelmanager.cpp
@@ -34,6 +35,7 @@ set (APP_SRCS
 # Applicalion headers files.
 set (APP_HDRS
 	dynamixelbus.h
+        DynamixelBusModel.h
 	searchservosdialog.h
 	selectserialport.h
 	dynamixelmanager.h

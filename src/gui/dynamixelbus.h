@@ -170,9 +170,8 @@ class DynamixelBus : public QThread {
   // Urządzenie szeregowe
   boost::scoped_ptr<AbstractSerial> serialDevice;
 
-  // Model widoku - ukryta implementacja
-  class DynamixelBusModel;
-  boost::scoped_ptr<DynamixelBusModel> dynamixelBusModel;
+  // Model widoku DynamixelServos
+  boost::scoped_ptr<QAbstractItemModel> dynamixelBusModel;
 
   //  boost::scoped_ptr<DynamixelControlTableRAM> dynamixelControlTableRAM;
   //  boost::scoped_ptr<DynamixelControlTableROM> dynamixelControlTableROM;

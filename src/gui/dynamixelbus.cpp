@@ -1,142 +1,16 @@
 
-
+#include "DynamixelBusModel.h"
 #include "dynamixelbus.h"
-
-#include <QIcon>
 
 #include <stdexcept>
 
 /* Implementacja modelu QAbstractItemModel */
-class DynamixelBus::DynamixelBusModel : public QAbstractItemModel {
-private:
-  bool opened;
 
-  enum IndexType {
-    IndexTypeRoot, IndexTypeDeviceName, IndexTypeBaudRate, IndexTypeID
-  };
-
-public:
-
-  DynamixelBusModel(const DynamixelBus& dB) :
-  opened(false)
-  {//  opened(false), deviceName(), baudrate(), dynamixelBus(dB) {
-  
-    TRI_LOG_STR("In DynamixelBusModel::DynamixelBusModel()");
-  }
-
-  QModelIndex index(int row, int column, const QModelIndex &parent) const {
-    if (!opened || row < 0 || column < 0)
-      return QModelIndex();
-
-    IndexType indexType = parent.isValid() ? static_cast<IndexType> (parent.internalId()) : IndexTypeRoot;
-    switch (indexType) {
-      case IndexTypeRoot:
-        return createIndex(0, 0, IndexTypeDeviceName);
-      case IndexTypeDeviceName:
-        return createIndex(0, 0, IndexTypeID);
-        //		case IndexTypeBaudRate:
-        //			return row < dyn_id.size() ? createIndex(row, 0, IndexTypeID) : QModelIndex();
-      case IndexTypeID:
-        return QModelIndex();
-      default:
-        return QModelIndex();
-    }
-  }
-
-  QModelIndex parent(const QModelIndex &child) const {
-    if (!opened)
-      return QModelIndex();
-
-    IndexType indexType = child.isValid() ? static_cast<IndexType> (child.internalId()) : IndexTypeRoot;
-    switch (indexType) {
-      case IndexTypeRoot:
-        return QModelIndex();
-      case IndexTypeDeviceName:
-        return createIndex(0, 0, IndexTypeRoot);
-        //		case IndexTypeBaudRate:
-        //			return createIndex(0, 0, IndexTypeDeviceName);
-      case IndexTypeID:
-        return createIndex(0, 0, IndexTypeDeviceName);
-      default:
-        return QModelIndex();
-    }
-  }
-
-  int rowCount(const QModelIndex &parent) const {
-    if (!opened)
-      return 0;
-
-    IndexType indexType = parent.isValid() ? static_cast<IndexType> (parent.internalId()) : IndexTypeRoot;
-    switch (indexType) {
-      case IndexTypeRoot:
-        return 1;
-      case IndexTypeDeviceName:
-        return dynamixelBus.getDynamixelServos().size();
-        //		case IndexTypeBaudRate:
-        //			return dyn_id.size();
-      case IndexTypeID:
-        return 0;
-    }
-  }
-
-  int columnCount(const QModelIndex &/* parent */) const {
-    return 1;
-  }
-
-  QVariant data(const QModelIndex &index, int role) const {
-    IndexType indexType = static_cast<IndexType> (index.internalId());
-    switch (role) {
-      case Qt::DisplayRole:
-      {
-        switch (indexType) {
-          case IndexTypeDeviceName:
-            return QString("%1@%2bps").arg(deviceName).arg(baudrate);
-            //			case IndexTypeBaudRate:
-            //				return QString::number(baudrate);
-          case IndexTypeID:
-            return QString("ID:%1").arg(dynamixelBus.getDynamixelServos()[index.row()].id);
-        }
-      }
-      case Qt::DecorationRole:
-      {
-        switch (indexType) {
-          case IndexTypeDeviceName:
-            return QIcon(":/icons/serial.png");
-            //			case IndexTypeBaudRate:
-            //				return QIcon(":/icons/baudrate.png");
-          case IndexTypeID:
-            return QIcon(":/icons/servo.png");
-            ;
-        }
-      }
-      default:
-        return QVariant();
-    }
-  }
-
-  void addServo(const quint8 id) {
-    reset();
-  }
-
-  void removeServo(const quint8 id) {
-
-  }
-
-  void openDevice() {
-    opened = true;
-    reset();
-  }
-
-  void closeDevice() {
-
-  }
-};
 
 DynamixelBus::DynamixelBus() :
-runMutex(new QMutex), serialDevice(new AbstractSerial) {
+runMutex(new QMutex), serialDevice(new AbstractSerial), dynamixelBusModel(new DynamixelBusModel()) {
   TRI_LOG_STR("In DynamixelBus::DynamixelBus()");
 
-  dynamixelBusModel.reset(new DynamixelBusModel(*this));
   //  dynamixelControlTableRAM.reset(new DynamixelControlTableRAM());
   //  dynamixelControlTableROM.reset(new DynamixelControlTableROM());
 
@@ -192,7 +66,7 @@ void DynamixelBus::openDevice(const QString& device, const QString& baud) {
 
   emit deviceOpened(serialDevice->isOpen());
 
-  dynamixelBusModel->openDevice();
+//  dynamixelBusModel->openDevice();
 }
 
 void DynamixelBus::closeDevice() {
@@ -205,7 +79,7 @@ void DynamixelBus::closeDevice() {
 
   dynamixelServos.clear();
 
-  dynamixelBusModel->closeDevice();
+//  dynamixelBusModel->closeDevice();
 
   TRI_LOG_STR("Out DynamixelBus::closeDevice()");
 }
