@@ -59,8 +59,39 @@ struct DynamixelServo {
     ram.punch = msblsb2quint16(data[25], data[24]);
   }
 
-  void setRAMData(const QByteArray & data) {
-    
+  void setROMData(const QByteArray & data) {
+    if (data.size() != 19)
+      return;
+
+    /* AlarmLED */
+    rom.instructionErrorAlarm = (data[17] & (0x01 << 6)) ? true : false;
+    rom.overloadErrorAlarm = (data[17] & (0x01 << 5)) ? true : false;
+    rom.checksumErrorAlarm = (data[17] & (0x01 << 4)) ? true : false;
+    rom.rangeErrorAlarm = (data[17] & (0x01 << 3)) ? true : false;
+    rom.overheatingErrorAlarm = (data[17] & (0x01 << 2)) ? true : false;
+    rom.angleLimitErrorAlarm = (data[17] & (0x01 << 1)) ? true : false;
+    rom.inputVoltageErrorAlarm = (data[17] & (0x01 << 0)) ? true : false;
+    /* AlarmShutdown */
+    rom.instructionErrorShutdown = (data[18] & (0x01 << 6)) ? true : false;
+    rom.overloadErrorShutdown = (data[18] & (0x01 << 5)) ? true : false;
+    rom.checksumErrorShutdown = (data[18] & (0x01 << 4)) ? true : false;
+    rom.rangeErrorShutdown = (data[18] & (0x01 << 3)) ? true : false;
+    rom.overheatingErrorShutdown = (data[18] & (0x01 << 2)) ? true : false;
+    rom.angleLimitErrorShutdown = (data[18] & (0x01 << 1)) ? true : false;
+    rom.inputVoltageErrorShutdown = (data[18] & (0x01 << 0)) ? true : false;
+
+    rom.modelNumber = msblsb2quint16(data[1], data[0]);
+    rom.firmwareVersion = data[2];
+    id = data[3];
+    rom.baudRate = data[4];
+    rom.returnDelayTime = data[5];
+    rom.cwAngleLimit = msblsb2quint16(data[7], data[6]);
+    rom.ccwAngleLimit = msblsb2quint16(data[9], data[8]);
+    rom.highestTemp = data[11];
+    rom.lowestVolt = data[12];
+    rom.highestVolt = data[13];
+    rom.maxTorque = msblsb2quint16(data[15], data[14]);
+    rom.statusReturnLevel = data[16];
   }
 
   static quint16 msblsb2quint16(char msb, char lsb) {
