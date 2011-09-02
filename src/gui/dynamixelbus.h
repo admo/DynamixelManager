@@ -53,8 +53,10 @@ public:
   ~DynamixelBus();
 
   QAbstractItemModel *getListModel() const;
-  
-  const DynamixelServos& getDynamixelServos() const { return dynamixelServos; }
+
+  const DynamixelServos& getDynamixelServos() const {
+    return dynamixelServos;
+  }
 
 public slots:
   void openDevice(const QString&, const QString&);
@@ -62,6 +64,18 @@ public slots:
 
   void add(quint8 id);
   void remove(quint8 id);
+
+  void setID(quint8, quint8);
+  void setBaudRate(quint8, quint8);
+  void setRetDelayTime(quint8, quint8);
+  void setAngleLimits(quint8, quint16, quint16);
+  void setHiLimitTemp(quint8, quint8);
+  void setLoLimitVol(quint8, quint8);
+  void setHiLimitVol(quint8, quint8);
+  void setMaxTorque(quint8, quint16);
+  void setStatRetLev(quint8, quint8);
+  void setAlarmLed(quint8, quint8);
+  void setAlarmShutdonwn(quint8, quint8);
 
   void setPosition(quint8, quint16);
   void setSpeed(quint8, quint16);
@@ -74,8 +88,6 @@ public slots:
   void setPunch(quint8, quint16);
   void setTorqueLimit(quint8, quint16);
   void setConfiguration(quint8);
-  void setID(quint8, quint8);
-  void setReturnLevel(quint8, quint8);
 
   void updateControlTableROM(quint8);
   void updateControlTableRAM(quint8);

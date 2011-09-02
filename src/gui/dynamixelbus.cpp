@@ -196,6 +196,124 @@ bool DynamixelBus::action(quint8 id) {
   return processCommunication(id, 0x05);
 }
 
+void DynamixelBus::setID(quint8 id, quint8 newID) {
+  QMutexLocker locker(&runMutex);
+
+  bool ret = write(id, 0x03, QByteArray(1, newID));
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
+void DynamixelBus::setBaudRate(quint8 id, quint8 baudRate) {
+  QMutexLocker locker(&runMutex);
+
+  bool ret = write(id, 0x04, QByteArray(1, baudRate));
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
+void DynamixelBus::setRetDelayTime(quint8 id, quint8 time) {
+  QMutexLocker locker(&runMutex);
+
+  bool ret = write(id, 0x05, QByteArray(1, time));
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
+void DynamixelBus::setAngleLimits(quint8 id, quint16 cw, quint16 ccw) {
+  QMutexLocker locker(&runMutex);
+
+  cw = qToLittleEndian(cw);
+  ccw = qToLittleEndian(ccw);
+  
+  QByteArray data;
+  data.append(QByteArray::fromRawData((char*) &cw, 2)).append(QByteArray::fromRawData((char*) &ccw, 2));
+
+  bool ret = write(id, 0x06, data);
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
+void DynamixelBus::setHiLimitTemp(quint8 id, quint8 limit) {
+  QMutexLocker locker(&runMutex);
+
+  bool ret = write(id, 0x0B, QByteArray(1, limit));
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
+void DynamixelBus::setLoLimitVol(quint8 id, quint8 limit) {
+  QMutexLocker locker(&runMutex);
+
+  bool ret = write(id, 0x0C, QByteArray(1, limit));
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
+void DynamixelBus::setHiLimitVol(quint8 id, quint8 limit) {
+  QMutexLocker locker(&runMutex);
+
+  bool ret = write(id, 0x0D, QByteArray(1, limit));
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
+void DynamixelBus::setMaxTorque(quint8 id, quint16 torque) {
+  QMutexLocker locker(&runMutex);
+
+  torque = qToLittleEndian(torque);
+
+  bool ret = write(id, 0x0E, QByteArray::fromRawData((char*) &torque, 2));
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
+void DynamixelBus::setStatRetLev(quint8 id, quint8 retLev) {
+  QMutexLocker locker(&runMutex);
+
+  bool ret = write(id, 0x10, QByteArray(1, retLev));
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
+void DynamixelBus::setAlarmLed(quint8 id, quint8 alarm) {
+  QMutexLocker locker(&runMutex);
+
+  bool ret = write(id, 0x11, QByteArray(1, alarm));
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
+void DynamixelBus::setAlarmShutdonwn(quint8 id, quint8 alarm) {
+  QMutexLocker locker(&runMutex);
+
+  bool ret = write(id, 0x12, QByteArray(1, alarm));
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+}
+
 void DynamixelBus::setPosition(quint8 id, quint16 position) {
   QMutexLocker locker(&runMutex);
 
@@ -306,93 +424,66 @@ void DynamixelBus::setTorqueLimit(quint8 id, quint16 limit) {
 
 void DynamixelBus::setConfiguration(quint8 id) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setConfiguration(quint8,boost::shared_ptr<DynamixelControlTableROM>)");
 
-  //	quint8 ledError =
-  //			(DYN_MASK_INSTRUCTION_ERR * rom->instructionErrorAlarm) +
-  //			(DYN_MASK_OVERLOAD_ERR * rom->overloadErrorAlarm) +
-  //			(DYN_MASK_CHECKSUM_ERR * rom->checksumErrorAlarm) +
-  //			(DYN_MASK_RANGE_ERR * rom->rangeErrorAlarm) +
-  //			(DYN_MASK_OVERHEATING_ERR * rom->overheatingErrorAlarm) +
-  //			(DYN_MASK_ANGLE_LIMIT_ERR * rom->angleLimitErrorAlarm) +
-  //			(DYN_MASK_INPUT_VOLTAGE_ERR * rom->inputVoltageErrorAlarm);
-  //	quint8 shutdownError =
-  //			(DYN_MASK_INSTRUCTION_ERR * rom->instructionErrorShutdown) +
-  //			(DYN_MASK_OVERLOAD_ERR * rom->overloadErrorShutdown) +
-  //			(DYN_MASK_CHECKSUM_ERR * rom->checksumErrorShutdown) +
-  //			(DYN_MASK_RANGE_ERR * rom->rangeErrorShutdown) +
-  //			(DYN_MASK_OVERHEATING_ERR * rom->overheatingErrorShutdown) +
-  //			(DYN_MASK_ANGLE_LIMIT_ERR * rom->angleLimitErrorShutdown) +
-  //			(DYN_MASK_INPUT_VOLTAGE_ERR * rom->inputVoltageErrorShutdown);
+  int index = dynamixelServos.getServoIndex(id);
 
-  //	dyn_config_t dyn_config = {
-  //		0, /* model number */
-  //		0, /* firmware version */
-  //		0, /* dynamixel id*/
-  //		0, /* baud rate */
-  //		0, /* return delay time */
-  //		rom->cwAngleLimit,
-  //		rom->ccwAngleLimit,
-  //		rom->highestTemp,
-  //		rom->lowestVolt,
-  //		rom->highestVolt,
-  //		rom->maxTorque,
-  //		0, /* status return level */
-  //		ledError,
-  //		shutdownError
-  //	};
+  if (index < 0) {
+    emit communicationError(id);
+  }
 
-  //	int ret = dyn_set_config(dyn_param.get(), id, &dyn_config);
-  //	if(ret != DYN_NO_ERROR)
-  //		emit communicationError(id);
+  DynamixelServo dynamixelServo(dynamixelServos[index]);
 
-  //	locker.unlock();
-  //	updateControlTableROM(id);
-  TRI_LOG_STR("Out DynamixelBus::setConfiguration(quint8,boost::shared_ptr<DynamixelControlTableROM>)");
+  quint8 ledError =
+          ((0x01 << 6) * dynamixelServo.rom.instructionErrorAlarm) +
+          ((0x01 << 5) * dynamixelServo.rom.overloadErrorAlarm) +
+          ((0x01 << 4) * dynamixelServo.rom.checksumErrorAlarm) +
+          ((0x01 << 3) * dynamixelServo.rom.rangeErrorAlarm) +
+          ((0x01 << 2) * dynamixelServo.rom.overheatingErrorAlarm) +
+          ((0x01 << 1) * dynamixelServo.rom.angleLimitErrorAlarm) +
+          ((0x01 << 0) * dynamixelServo.rom.inputVoltageErrorAlarm);
+  quint8 shutdownError =
+          ((0x01 << 6) * dynamixelServo.rom.instructionErrorShutdown) +
+          ((0x01 << 5) * dynamixelServo.rom.overloadErrorShutdown) +
+          ((0x01 << 4) * dynamixelServo.rom.checksumErrorShutdown) +
+          ((0x01 << 3) * dynamixelServo.rom.rangeErrorShutdown) +
+          ((0x01 << 2) * dynamixelServo.rom.overheatingErrorShutdown) +
+          ((0x01 << 1) * dynamixelServo.rom.angleLimitErrorShutdown) +
+          ((0x01 << 0) * dynamixelServo.rom.inputVoltageErrorShutdown);
+
+  dynamixelServo.rom.cwAngleLimit = qToLittleEndian(dynamixelServo.rom.cwAngleLimit);
+  dynamixelServo.rom.ccwAngleLimit = qToLittleEndian(dynamixelServo.rom.ccwAngleLimit);
+
+  QByteArray data;
+  data.append(QByteArray::fromRawData((char*) &dynamixelServo.rom.cwAngleLimit, 2)).append(QByteArray::fromRawData((char*) &dynamixelServo.rom.ccwAngleLimit, 2));
+
+  bool ret = write(id, 0x06, data);
+
+  if (!ret) {
+    emit communicationError(id);
+  }
+
+  data.resize(7);
+  data[0] = dynamixelServo.rom.highestTemp;
+  data[1] = dynamixelServo.rom.lowestVolt;
+  data[2] = dynamixelServo.rom.highestVolt;
+  data[3] = dynamixelServo.rom.maxTorque;
+  data[4] = dynamixelServo.rom.statusReturnLevel;
+  data[5] = ledError;
+  data[6] = shutdownError;
+
+  ret = write(id, 0x0B, data);
+
+  if (!ret) {
+    emit communicationError(id);
+  }
 }
 
-void DynamixelBus::setID(quint8 id, quint8 newID) {
-  QMutexLocker locker(&runMutex);
-  bool force = false;
-  TRI_LOG_STR("In DynamixelBus::setID(quint8,quint8)");
-
-  //	if (!force && dyn_get_servo(dyn_param.get(), newID)) {
-  //		/* Wyślij sygnał informujący o takich samych ID */
-  //		return;
-  //	}
-
-  //	/* Wyślij rozkaz zmiany id */
-  //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_ID, 1, &newID);
-  //	if (ret == DYN_NO_ERROR) {
-  //		dyn_get_servo(dyn_param.get(), id)->id = newID;
-  //		dyn_sort_dyn_servo(dyn_param.get());
-  //		dynamixelBusModel->servoAdded(dyn_servo);
-  //	} else
-  //		emit communicationError(id);
-
-  locker.unlock();
-  updateControlTableROM(newID);
-  TRI_LOG_STR("Out DynamixelBus::setID(quint8,quint8)");
-}
-
-void DynamixelBus::setReturnLevel(quint8 id, quint8 returnLevel) {
-  QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::setReturnLevel(quint8,quint8)");
-
-  //	int ret = dyn_write_data(dyn_param.get(), id, DYN_ADR_STATUS_RETURN_LEVEL, 1, &returnLevel);
-  //	if (ret == DYN_NO_ERROR) {
-  //		dyn_get_servo(dyn_param.get(), id)->return_level = returnLevel;
-  //	} else
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::setReturnLevel(quint8,quint8)");
-}
 
 void DynamixelBus::updateControlTableROM(quint8 id) {
   QMutexLocker locker(&runMutex);
-  
+
   QByteArray data;
-  
+
   if (read(id, 0x00, 19, &data)) {
     dynamixelServos.setROMData(id, data);
     emit controlTableROMUpdated(id);

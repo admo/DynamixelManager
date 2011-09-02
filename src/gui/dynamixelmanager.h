@@ -43,6 +43,18 @@ signals:
 	void updateControlTableROM(quint8);
 	void updateControlTableRAM(quint8);
 
+        void setID(quint8, quint8);
+        void setBaudRate(quint8, quint8);
+        void setRetDelayTime(quint8, quint8);
+        void setAngleLimits(quint8, quint16, quint16);
+        void setHiLimitTemp(quint8, quint8);
+        void setLoLimitVol(quint8, quint8);
+        void setHiLimitVol(quint8, quint8);
+        void setMaxTorque(quint8, quint16);
+        void setStatRetLev(quint8, quint8);
+        void setAlarmLED(quint8, quint8);
+        void setAlarmShutdonwn(quint8, quint8);
+        
 	void setPosition(quint8, quint16);
 	void setSpeed(quint8, quint16);
 	void setTorqueEnable(quint8, bool);
@@ -53,12 +65,6 @@ signals:
 	void setCCWSlope(quint8, quint8);
 	void setPunch(quint8, quint16);
 	void setTorqueLimit(quint8, quint16);
-	void setConfiguration(quint8);
-
-	void setID(quint8, quint8);
-	void setBaudrate(quint8, quint8);
-	void setReturnLevel(quint8, quint8);
-	void setReturnDelay(quint8, quint8);
 
 private slots:
 	void closeDevice();

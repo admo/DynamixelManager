@@ -83,6 +83,19 @@ operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
   connect(this, SIGNAL(setCCWSlope(quint8, quint8)), dynamixelBus, SLOT(setCCWSlope(quint8, quint8)));
   connect(this, SIGNAL(setPunch(quint8, quint16)), dynamixelBus, SLOT(setPunch(quint8, quint16)));
   connect(this, SIGNAL(setTorqueLimit(quint8, quint16)), dynamixelBus, SLOT(setTorqueLimit(quint8, quint16)));
+  
+  /* Sygnały do konfiguracji serwa */
+  connect(this, SIGNAL(setID(quint8,quint8)), dynamixelBus, SLOT(setID(quint8,quint8)));
+  connect(this, SIGNAL(setBaudRate(quint8,quint8)), dynamixelBus, SLOT(setBaudRate(quint8,quint8)));
+  connect(this, SIGNAL(setRetDelayTime(quint8,quint8)), dynamixelBus, SLOT(setRetDelayTime(quint8,quint8)));
+  connect(this, SIGNAL(setAngleLimits(quint8,quint16,quint16)), dynamixelBus, SLOT(setAngleLimits(quint8,quint16,quint16)));
+  connect(this, SIGNAL(setHiLimitTemp(quint8,quint8)), dynamixelBus, SLOT(setHiLimitTemp(quint8,quint8)));
+  connect(this, SIGNAL(setLoLimitVol(quint8,quint8)), dynamixelBus, SLOT(setLoLimitVol(quint8,quint8)));
+  connect(this, SIGNAL(setHiLimitVol(quint8,quint8)), dynamixelBus, SLOT(setHiLimitVol(quint8,quint8)));
+  connect(this, SIGNAL(setMaxTorque(quint8,quint16)), dynamixelBus, SLOT(setMaxTorque(quint8,quint16)));
+  connect(this, SIGNAL(setStatRetLev(quint8,quint8)), dynamixelBus, SLOT(setStatRetLev(quint8,quint8)));
+  connect(this, SIGNAL(setAlarmLED(quint8,quint8)), dynamixelBus, SLOT(setAlarmLED(quint8,quint8)));
+  connect(this, SIGNAL(setAlarmShutdonwn(quint8,quint8)), dynamixelBus, SLOT(setAlarmShutdonwn(quint8,quint8)));
 
   /* Zakładka "Configure" */
   operatingModeMapper.setMapping(ui->jointModeRadioButton, 0);
@@ -113,8 +126,6 @@ operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
   connect(voltageLimitMapper.get(), SIGNAL(mapped(int)), this, SLOT(voltageLimitChanged(int)));
 
   connect(ui->applyConfigurePushButton, SIGNAL(clicked()), this, SLOT(applyConfiguration()));
-  connect(this, SIGNAL(setConfiguration(quint8)),
-          dynamixelBus, SLOT(setConfiguration(quint8)));
 }
 
 DynamixelManager::~DynamixelManager() {
@@ -215,7 +226,8 @@ void DynamixelManager::controlTableROMUpdated(quint8 id) {
 
 
   /* Angle Limit i Operating Mode */
-  ui->jointModeRadioButton->setChecked(!(dynamixelServo.rom.ccwAngleLimit == 0 && dynamixelServo.rom.cwAngleLimit == 0) ? true : false);
+  ui->jointModeRadioButton->setChecked(!(dynamixelServo.rom.ccwAngleLimit == 0 && dynamixelServo.rom.cwAngleLimit == 0));
+  ui->wheelModeRadioButton->setChecked(dynamixelServo.rom.ccwAngleLimit == 0 && dynamixelServo.rom.cwAngleLimit == 0);
   ui->cwAngleLimitHorizontalSlider->setValue(dynamixelServo.rom.cwAngleLimit);
   ui->ccwAngleLimitHorizontalSlider->setValue(dynamixelServo.rom.ccwAngleLimit);
 
@@ -466,8 +478,6 @@ void DynamixelManager::pwmControlActivated(int index) {
 }
 
 void DynamixelManager::operatingModeAndAngleLimitChanged(int id) {
-  TRI_LOG_STR("In DynamixelManager::operatingModeAndAngleLimitChanged(int)");
-
   int cw = ui->cwAngleLimitHorizontalSlider->value();
   int ccw = ui->ccwAngleLimitHorizontalSlider->value();
   bool joint = ui->jointModeRadioButton->isChecked();
@@ -482,13 +492,9 @@ void DynamixelManager::operatingModeAndAngleLimitChanged(int id) {
     ui->ccwAngleLimitHorizontalSlider->setValue((id == 1) ? cw + 1 : ccw);
     ui->cwAngleLimitHorizontalSlider->setValue((id == 2) ? ccw - 1 : cw);
   }
-
-  TRI_LOG_STR("Out DynamixelManager::operatingModeAndAngleLimitChanged(int)");
 }
 
 void DynamixelManager::voltageLimitChanged(int id) {
-  TRI_LOG_STR("In DynamixelManager::voltageLimitChanged(int)");
-
   int high = ui->highVoltageLimitHorizontalSlider->value();
   int low = ui->lowVoltageLimitHorizontalSlider->value();
 
@@ -496,18 +502,30 @@ void DynamixelManager::voltageLimitChanged(int id) {
     ui->highVoltageLimitHorizontalSlider->setValue((id == 0) ? low + 1 : high);
     ui->lowVoltageLimitHorizontalSlider->setValue((id == 1) ? high - 1 : low);
   }
-
-  TRI_LOG_STR("Out DynamixelManager::voltageLimitChanged(int)");
-
 }
 
 void DynamixelManager::applyConfiguration() {
-  TRI_LOG_STR("In DynamixelManager::applyConfiguration()");
-
-  if (!ui->servosTreeView->currentIndex().isValid())
+  TRI_LOG_STR("aaaa");
+  QModelIndex index = ui->servosTreeView->currentIndex();
+  if (!index.isValid())
     return;
-
-  quint8 id = ui->servosTreeView->currentIndex().data().toUInt();
+  
+  quint8 id = index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id;
+  
+  quint8 alarmLED = 0;
+  quint8 alarmShutdown = 0;
+  
+  emit setAngleLimits(id, ui->cwAngleLimitHorizontalSlider->value(), ui->ccwAngleLimitHorizontalSlider->value());
+  emit setHiLimitTemp(id, ui->temperatureLimitVerticalSlider->value());
+  emit setLoLimitVol(id, ui->lowVoltageLimitHorizontalSlider->value());
+  emit setHiLimitVol(id, ui->highVoltageLimitHorizontalSlider->value());
+  emit setMaxTorque(id, ui->maxTorqueVerticalSlider->value());
+  
+  emit updateControlTableROM(id);
+//  emit setAlarmLed(id, alarmLED);
+//  emit setAlarmShutdonwn(id, alarmShutdown);
+  
+//  emit setAngleLimits(id, )
   //
   //	boost::shared_ptr<DynamixelControlTableROM> rom(new DynamixelControlTableROM);
   //
@@ -534,19 +552,14 @@ void DynamixelManager::applyConfiguration() {
   //	rom->maxTorque = ui->maxTorqueVerticalSlider->value();
   //
   //	rom->id = id;
-
-  emit setConfiguration(id);
-
-  TRI_LOG_STR("Out DynamixelManager::applyConfiguration()");
 }
 
 void DynamixelManager::idChanged() {
-  TRI_LOG_STR("In DynamixelManager::idChanged()");
+  QModelIndex index = ui->servosTreeView->currentIndex();
+  if (!index.isValid())
+    return;
 
-  if (ui->servosTreeView->currentIndex().isValid())
-    emit setID(ui->servosTreeView->currentIndex().data().toUInt(), ui->idSpinBox->value());
-
-  TRI_LOG_STR("Out DynamixelManager::idChanged()");
+  emit setID(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, ui->idSpinBox->value());
 }
 
 void DynamixelManager::baudrateChanged() {
@@ -556,12 +569,11 @@ void DynamixelManager::baudrateChanged() {
 }
 
 void DynamixelManager::returnLevelChanged() {
-  TRI_LOG_STR("In DynamixelManager::baudrateChanged()");
+  QModelIndex index = ui->servosTreeView->currentIndex();
+  if (!index.isValid())
+    return;
 
-  if (ui->servosTreeView->currentIndex().isValid())
-    emit setReturnLevel(ui->servosTreeView->currentIndex().data().toUInt(), ui->returnLevelSpinBox->value());
-
-  TRI_LOG_STR("Out DynamixelManager::baudrateChanged()");
+  emit setStatRetLev(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, ui->returnLevelSpinBox->value());
 }
 
 void DynamixelManager::returnDelayChanged() {
