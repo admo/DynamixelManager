@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>DynamixelManager</class>
  <widget class="QMainWindow" name="DynamixelManager">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -14,6 +17,9 @@
    <string>DynamixelManager</string>
   </property>
   <widget class="QWidget" name="centralWidget">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <layout class="QGridLayout" name="gridLayout_8">
     <item row="0" column="0">
      <layout class="QGridLayout" name="gridLayout">
@@ -348,14 +354,21 @@
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_5">
                       <item>
-                       <widget class="QSlider" name="horizontalSlider">
+                       <widget class="QSlider" name="punchHorizontalSlider">
+                        <property name="maximum">
+                         <number>1023</number>
+                        </property>
                         <property name="orientation">
                          <enum>Qt::Horizontal</enum>
                         </property>
                        </widget>
                       </item>
                       <item>
-                       <widget class="QSpinBox" name="spinBox"/>
+                       <widget class="QSpinBox" name="punchSpinBox">
+                        <property name="maximum">
+                         <number>1023</number>
+                        </property>
+                       </widget>
                       </item>
                      </layout>
                     </item>
@@ -369,14 +382,21 @@
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_19">
                       <item>
-                       <widget class="QSlider" name="horizontalSlider_3">
+                       <widget class="QSlider" name="torqueLimitHorizontalSlider">
+                        <property name="maximum">
+                         <number>1023</number>
+                        </property>
                         <property name="orientation">
                          <enum>Qt::Horizontal</enum>
                         </property>
                        </widget>
                       </item>
                       <item>
-                       <widget class="QSpinBox" name="spinBox_3"/>
+                       <widget class="QSpinBox" name="torqueLimitSpinBox">
+                        <property name="maximum">
+                         <number>1023</number>
+                        </property>
+                       </widget>
                       </item>
                      </layout>
                     </item>
@@ -1456,8 +1476,8 @@
      <y>249</y>
     </hint>
     <hint type="destinationlabel">
-     <x>687</x>
-     <y>254</y>
+     <x>671</x>
+     <y>257</y>
     </hint>
    </hints>
   </connection>
@@ -1472,8 +1492,8 @@
      <y>319</y>
     </hint>
     <hint type="destinationlabel">
-     <x>687</x>
-     <y>324</y>
+     <x>671</x>
+     <y>329</y>
     </hint>
    </hints>
   </connection>
@@ -1484,8 +1504,8 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>687</x>
-     <y>254</y>
+     <x>671</x>
+     <y>257</y>
     </hint>
     <hint type="destinationlabel">
      <x>393</x>
@@ -1504,8 +1524,8 @@
      <y>428</y>
     </hint>
     <hint type="destinationlabel">
-     <x>686</x>
-     <y>433</y>
+     <x>670</x>
+     <y>436</y>
     </hint>
    </hints>
   </connection>
@@ -1516,8 +1536,8 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>687</x>
-     <y>324</y>
+     <x>671</x>
+     <y>329</y>
     </hint>
     <hint type="destinationlabel">
      <x>393</x>
@@ -1532,8 +1552,8 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>686</x>
-     <y>433</y>
+     <x>670</x>
+     <y>436</y>
     </hint>
     <hint type="destinationlabel">
      <x>394</x>
@@ -1548,12 +1568,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>789</x>
-     <y>193</y>
+     <x>786</x>
+     <y>131</y>
     </hint>
     <hint type="destinationlabel">
-     <x>844</x>
-     <y>346</y>
+     <x>832</x>
+     <y>339</y>
     </hint>
    </hints>
   </connection>
@@ -1564,12 +1584,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>844</x>
-     <y>346</y>
+     <x>832</x>
+     <y>339</y>
     </hint>
     <hint type="destinationlabel">
-     <x>789</x>
-     <y>193</y>
+     <x>786</x>
+     <y>131</y>
     </hint>
    </hints>
   </connection>
@@ -1580,12 +1600,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>895</x>
-     <y>193</y>
+     <x>894</x>
+     <y>131</y>
     </hint>
     <hint type="destinationlabel">
-     <x>949</x>
-     <y>346</y>
+     <x>940</x>
+     <y>339</y>
     </hint>
    </hints>
   </connection>
@@ -1596,12 +1616,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>949</x>
-     <y>346</y>
+     <x>940</x>
+     <y>339</y>
     </hint>
     <hint type="destinationlabel">
-     <x>895</x>
-     <y>193</y>
+     <x>894</x>
+     <y>131</y>
     </hint>
    </hints>
   </connection>
@@ -1612,12 +1632,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>705</x>
-     <y>202</y>
+     <x>723</x>
+     <y>196</y>
     </hint>
     <hint type="destinationlabel">
-     <x>612</x>
-     <y>192</y>
+     <x>435</x>
+     <y>197</y>
     </hint>
    </hints>
   </connection>
@@ -1628,12 +1648,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>539</x>
-     <y>190</y>
+     <x>435</x>
+     <y>197</y>
     </hint>
     <hint type="destinationlabel">
-     <x>715</x>
-     <y>202</y>
+     <x>723</x>
+     <y>196</y>
     </hint>
    </hints>
   </connection>
@@ -1644,12 +1664,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>623</x>
-     <y>229</y>
+     <x>435</x>
+     <y>232</y>
     </hint>
     <hint type="destinationlabel">
-     <x>705</x>
-     <y>240</y>
+     <x>723</x>
+     <y>231</y>
     </hint>
    </hints>
   </connection>
@@ -1660,12 +1680,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>701</x>
-     <y>228</y>
+     <x>723</x>
+     <y>231</y>
     </hint>
     <hint type="destinationlabel">
-     <x>581</x>
-     <y>228</y>
+     <x>435</x>
+     <y>232</y>
     </hint>
    </hints>
   </connection>
@@ -1676,12 +1696,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>428</x>
-     <y>300</y>
+     <x>433</x>
+     <y>303</y>
     </hint>
     <hint type="destinationlabel">
-     <x>702</x>
-     <y>303</y>
+     <x>723</x>
+     <y>302</y>
     </hint>
    </hints>
   </connection>
@@ -1692,12 +1712,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>698</x>
-     <y>291</y>
+     <x>723</x>
+     <y>302</y>
     </hint>
     <hint type="destinationlabel">
-     <x>576</x>
-     <y>294</y>
+     <x>433</x>
+     <y>303</y>
     </hint>
    </hints>
   </connection>
@@ -1708,12 +1728,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>652</x>
-     <y>334</y>
+     <x>433</x>
+     <y>338</y>
     </hint>
     <hint type="destinationlabel">
-     <x>694</x>
-     <y>332</y>
+     <x>723</x>
+     <y>337</y>
     </hint>
    </hints>
   </connection>
@@ -1724,12 +1744,76 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>707</x>
+     <x>723</x>
      <y>337</y>
     </hint>
     <hint type="destinationlabel">
-     <x>583</x>
-     <y>335</y>
+     <x>433</x>
+     <y>338</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>punchHorizontalSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>punchSpinBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>525</x>
+     <y>486</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>637</x>
+     <y>473</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>punchSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>punchHorizontalSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>627</x>
+     <y>483</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>579</x>
+     <y>489</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>torqueLimitHorizontalSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>torqueLimitSpinBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>579</x>
+     <y>545</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>656</x>
+     <y>545</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>torqueLimitSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>torqueLimitHorizontalSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>639</x>
+     <y>536</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>573</x>
+     <y>539</y>
     </hint>
    </hints>
   </connection>

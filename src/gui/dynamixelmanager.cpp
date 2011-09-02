@@ -74,6 +74,8 @@ operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
   /* Stop requested */
   connect(ui->stopMovementPushButton, SIGNAL(clicked()), this, SLOT(stopMovement()));
   /* PWM Control */
+  connect(ui->punchHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(pwmPunchChanged(int)));
+  connect(ui->torqueLimitHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(pwmTorqueLimitChanged(int)));
   connect(ui->pwmControlComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(pwmControlActivated(int)));
   connect(this, SIGNAL(setCWMargin(quint8, quint8)), dynamixelBus, SLOT(setCWMargin(quint8, quint8)));
   connect(this, SIGNAL(setCCWMargin(quint8, quint8)), dynamixelBus, SLOT(setCCWMargin(quint8, quint8)));
@@ -297,6 +299,10 @@ void DynamixelManager::firstControlTableRAMUpdated(quint8 id) {
   ui->speedHorizontalSlider->setValue(dynamixelServo.ram.movingSpeed);
   /* Goal Position */
   ui->positionHorizontalSlider->setValue(dynamixelServo.ram.goalPosition);
+  /* Punch */
+  ui->punchHorizontalSlider->setValue(dynamixelServo.ram.punch);
+  /* Torque Limit */
+  ui->torqueLimitHorizontalSlider->setValue(dynamixelServo.ram.torqueLimit);
 
   /* Rozłączenie sygnału DynamixelBus::controlTableRAMUpdated z tym Slotem */
   disconnect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
