@@ -24,37 +24,51 @@ struct DynamixelServo {
   bool operator==(const DynamixelServo & servo) const {
     return id == servo.id;
   }
-  
-  void setRAMData(const QByteArray& data) {
-    //		if(data.size() != DYN_RAM_TABLE_LENGTH)
-    //			return;
 
-    //		instructionError = (error & DYN_MASK_INSTRUCTION_ERR) ? true : false;
-    //		overloadError = (error & DYN_MASK_OVERLOAD_ERR) ? true : false;
-    //		checksumError = (error & DYN_MASK_CHECKSUM_ERR) ? true : false;
-    //		rangeError = (error & DYN_MASK_RANGE_ERR) ? true : false;
-    //		overheatingError = (error & DYN_MASK_OVERHEATING_ERR) ? true : false;
-    //		angleLimitError = (error & DYN_MASK_ANGLE_LIMIT_ERR) ? true : false;
-    //		inputVoltageError = (error & DYN_MASK_INPUT_VOLTAGE_ERR) ? true : false;
+  void setRAMData(const QByteArray & data) {
+    if (data.size() != 26)
+      return;
 
-    //		torqueEnable = data[0];
-    //		led = data[1];
-    //		cwMargin = data[2];
-    //		ccwMargin = data[3];
-    //		cwSlope = data[4];
-    //		ccwSlope = data[5];
-    //		goalPosition = DYN_MSBLSBWord16(data[7], data[6]);
-    //		movingSpeed = DYN_MSBLSBWord16(data[9], data[8]);
-    //		torqueLimit = DYN_MSBLSBWord16(data[11], data[10]);
-    //		presentPosition = DYN_MSBLSBWord16(data[13], data[12]);
-    //		presentSpeed = DYN_GET_SPEED(data[15], data[14]);
-    //		presentLoad = DYN_GET_LOAD(data[17], data[16]);
-    //		presentVolt = data[18];
-    //		presentTemp =data[19];
-    //		reqisteredInstruction = data[20];
-    //		moving = data[21];
-    //		lock = data[22];
-    //		punch = DYN_MSBLSBWord16(data[24], data[23]);
+    DynamixelServo::errorCode;
+    ram.instructionError = (errorCode & (0x01 << 6)) ? true : false;
+    ram.overloadError = (errorCode & (0x01 << 5)) ? true : false;
+    ram.checksumError = (errorCode & (0x01 << 4)) ? true : false;
+    ram.rangeError = (errorCode & (0x01 << 3)) ? true : false;
+    ram.overheatingError = (errorCode & (0x01 << 2)) ? true : false;
+    ram.angleLimitError = (errorCode & (0x01 << 1)) ? true : false;
+    ram.inputVoltageError = (errorCode & (0x01 << 0)) ? true : false;
+
+    ram.torqueEnable = data[0] != 0;
+    ram.led = data[1] != 0;
+    ram.cwMargin = data[2];
+    ram.ccwMargin = data[3];
+    ram.cwSlope = data[4];
+    ram.ccwSlope = data[5];
+    ram.goalPosition = msblsb2quint16(data[7], data[6]);
+    ram.movingSpeed = msblsb2quint16(data[9], data[8]);
+    ram.torqueLimit = msblsb2quint16(data[11], data[10]);
+    ram.presentPosition = msblsb2quint16(data[13], data[12]);
+    ram.presentSpeed = msblsb2speed(data[15], data[14]);
+    ;
+    ram.presentLoad = msblsb2speed(data[17], data[16]);
+    ram.presentVolt = data[18];
+    ram.presentTemp = data[19];
+    ram.reqisteredInstruction = data[20];
+    ram.moving = data[22];
+    ram.lock = data[23];
+    ram.punch = msblsb2quint16(data[25], data[24]);
+  }
+
+  static quint16 msblsb2quint16(char msb, char lsb) {
+    return (quint16) (((msb & 0xFF) << 8) | (lsb & 0xFF));
+  }
+
+  static qint16 msblsb2speed(char msb, char lsb) {
+    return (msblsb2quint16(msb, lsb) & 0x03FF) * ((msb & 0x04) ? -1 : 1);
+  }
+
+  static qint16 msblsb2load(char msb, char lsb) {
+    return (msblsb2quint16(msb, lsb) & 0x01FF) * ((msb & 0x02) ? -1 : 1);
   }
 
   quint8 id;

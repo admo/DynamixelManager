@@ -8,20 +8,11 @@
 
 DynamixelBus::DynamixelBus() :
 dynamixelBusModel(new DynamixelBusModel(serialDevice, dynamixelServos, this)) {
-  TRI_LOG_STR("In DynamixelBus::DynamixelBus()");
-
-  //  dynamixelControlTableRAM.reset(new DynamixelControlTableRAM());
-  //  dynamixelControlTableROM.reset(new DynamixelControlTableROM());
-
   start();
   moveToThread(this); //Przenieś obsługę slotów do własnej pętli zdażeń
-
-  TRI_LOG_STR("Out DynamixelBus::DynamixelBus()");
 }
 
 DynamixelBus::~DynamixelBus() {
-  TRI_LOG_STR("In DynamixelBus::~DynamixelBus()");
-
   {
     QMutexLocker locker(&runMutex);
     quit();
@@ -29,16 +20,10 @@ DynamixelBus::~DynamixelBus() {
   wait();
 
   closeDevice();
-
-  TRI_LOG_STR("Out DynamixelBus::~DynamixelBus()");
 }
 
 void DynamixelBus::run() {
-  TRI_LOG_STR("In DynamixelBus::run()");
-
   exec();
-
-  TRI_LOG_STR("Out DynamixelBus::run()");
 }
 
 void DynamixelBus::openDevice(const QString& device, const QString& baud) {
@@ -64,14 +49,10 @@ void DynamixelBus::openDevice(const QString& device, const QString& baud) {
   }
 
   emit deviceOpened(serialDevice.isOpen());
-
-  //  dynamixelBusModel->openDevice();
 }
 
 void DynamixelBus::closeDevice() {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::closeDevice()");
-
   serialDevice.close();
 
   emit deviceClosed();
@@ -79,8 +60,6 @@ void DynamixelBus::closeDevice() {
   dynamixelServos.clear();
 
   //  dynamixelBusModel->closeDevice();
-
-  TRI_LOG_STR("Out DynamixelBus::closeDevice()");
 }
 
 quint8 DynamixelBus::checksum(const QByteArray::const_iterator& begin, const QByteArray::const_iterator& end) const {
@@ -172,11 +151,8 @@ quint8 DynamixelBus::computeResponseLength(quint8 id, quint8 instruction, const 
 
 void DynamixelBus::add(quint8 id) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::add(quint8)");
-  TRI_LOG_FN(ping(id));
   if (dynamixelServos.isServo(id) || !ping(id)) {
     emit added(id, false);
-    TRI_LOG_STR("Out DynamixelBus::add(quint8)");
     return;
   }
 
@@ -190,7 +166,6 @@ void DynamixelBus::add(quint8 id) {
   }
 
   emit added(id, true);
-  TRI_LOG_STR("Out DynamixelBus::add(quint8)");
 }
 
 void DynamixelBus::remove(quint8 id) {
@@ -431,7 +406,6 @@ void DynamixelBus::updateControlTableROM(quint8 id) {
 
 void DynamixelBus::updateControlTableRAM(quint8 id) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::updateControlTableRAM(quint8)");
 
   QByteArray data;
 
@@ -441,19 +415,8 @@ void DynamixelBus::updateControlTableRAM(quint8 id) {
   } else {
     emit communicationError(id);
   }
-
-  //	QVector<quint8> data(DYN_RAM_TABLE_LENGTH, 0);
-  //	int ret = dyn_read_data(dyn_param.get(), id, DYN_ADR_TORQUE_ENABLE,
-  //													DYN_RAM_TABLE_LENGTH, data.data());
-  //	if (ret == DYN_NO_ERROR) {
-  //		dynamixelControlTableRAM->setStructure(dyn_get_error_code(dyn_param.get(), id), data);
-  //		emit controlTableRAMUpdated(dynamixelControlTableRAM.get());
-  //	} else
-  //		emit communicationError(id);
-
-  //	TRI_LOG_STR("Out DynamixelBus::updateControlTableRAM(quint8)");
 }
 
 QAbstractItemModel* DynamixelBus::getListModel() const {
-  return dynamixelBusModel.get();
+  return dynamixelBusModel;
 }

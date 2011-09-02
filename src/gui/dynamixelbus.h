@@ -15,10 +15,6 @@
 #include <QWriteLocker>
 #include <QByteArray>
 
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/bind.hpp>
-
 #include <algorithm>
 
 #include <termios.h>
@@ -35,7 +31,7 @@ class DynamixelBus : public QThread {
   AbstractSerial serialDevice;
 
   // Model widoku DynamixelServos
-  boost::scoped_ptr<QAbstractItemModel> dynamixelBusModel;
+  QAbstractItemModel* dynamixelBusModel;
 
   // Metody obslugujace komunikacje z serwami
   inline quint8 checksum(const QByteArray::const_iterator& begin, const QByteArray::const_iterator& end) const;
