@@ -329,7 +329,7 @@ void DynamixelBus::setTorqueLimit(quint8 id, quint16 limit) {
   }
 }
 
-void DynamixelBus::setConfiguration(quint8 id, boost::shared_ptr<DynamixelControlTableROM> rom) {
+void DynamixelBus::setConfiguration(quint8 id) {
   QMutexLocker locker(&runMutex);
   TRI_LOG_STR("In DynamixelBus::setConfiguration(quint8,boost::shared_ptr<DynamixelControlTableROM>)");
 

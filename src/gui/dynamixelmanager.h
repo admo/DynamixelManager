@@ -53,7 +53,7 @@ signals:
 	void setCCWSlope(quint8, quint8);
 	void setPunch(quint8, quint16);
 	void setTorqueLimit(quint8, quint16);
-	void setConfiguration(quint8, boost::shared_ptr<DynamixelControlTableROM>);
+	void setConfiguration(quint8);
 
 	void setID(quint8, quint8);
 	void setBaudrate(quint8, quint8);
@@ -70,9 +70,9 @@ private slots:
 
 	void servosListCurrentIndexChanged(const QModelIndex &);
 	void tabWidgetCurrentIndexChanged(int);
-	void controlTableROMUpdated(const DynamixelControlTableROM*);
+	void controlTableROMUpdated(quint8);
 	void controlTableRAMUpdated(quint8);
-	void firstControlTableRAMUpdated(const DynamixelControlTableRAM*);
+	void firstControlTableRAMUpdated(quint8);
 
 	/* Zakładka Operation */
 	void torqueEnabled();               // Włącz/Wyłącz moment na silniku

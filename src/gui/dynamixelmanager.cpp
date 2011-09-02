@@ -23,8 +23,6 @@ DynamixelManager::DynamixelManager(QWidget *parent) :
 
 	ui->servosTreeView->setModel(dynamixelBus->getListModel());
 
-	qRegisterMetaType<boost::shared_ptr<DynamixelControlTableROM> >();
-
 	/* Sygnały akcji menu */
 	/* Open */
 	connect(ui->actionOpen, SIGNAL(triggered()), selectSerialPortDialog, SLOT(exec()));
@@ -51,8 +49,8 @@ DynamixelManager::DynamixelManager(QWidget *parent) :
 	/* Control tables */
 	connect(this, SIGNAL(updateControlTableROM(quint8)),
 			dynamixelBus, SLOT(updateControlTableROM(quint8)));
-	connect(dynamixelBus, SIGNAL(controlTableROMUpdated(const DynamixelControlTableROM*)),
-			this, SLOT(controlTableROMUpdated(const DynamixelControlTableROM *)));
+	connect(dynamixelBus, SIGNAL(controlTableROMUpdated(quint8)),
+			this, SLOT(controlTableROMUpdated(quint8)));
 	connect(this, SIGNAL(updateControlTableRAM(quint8)),
 			dynamixelBus, SLOT(updateControlTableRAM(quint8)));
 	connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
@@ -116,8 +114,8 @@ DynamixelManager::DynamixelManager(QWidget *parent) :
 	connect(voltageLimitMapper.get(), SIGNAL(mapped(int)), this, SLOT(voltageLimitChanged(int)));
 
 	connect(ui->applyConfigurePushButton, SIGNAL(clicked()), this, SLOT(applyConfiguration()));
-	connect(this, SIGNAL(setConfiguration(quint8,boost::shared_ptr<DynamixelControlTableROM>)),
-			dynamixelBus, SLOT(setConfiguration(quint8,boost::shared_ptr<DynamixelControlTableROM>)));
+	connect(this, SIGNAL(setConfiguration(quint8)),
+			dynamixelBus, SLOT(setConfiguration(quint8)));
 
 	TRI_LOG_STR("Out DynamixelManager::DynamixelManager()");
 }
@@ -201,8 +199,8 @@ void DynamixelManager::servosListCurrentIndexChanged(const QModelIndex &index) {
 
 	switch(ui->tabWidget->currentIndex()) {
 	case 0: /* Operating */
-		connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(const DynamixelControlTableRAM *)),
-				this, SLOT(firstControlTableRAMUpdated(const DynamixelControlTableRAM *)));
+		connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
+				this, SLOT(firstControlTableRAMUpdated(quint8)));
 		emit updateControlTableRAM(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo>().id);
                 ui->tabWidget->setEnabled(true);
 		break;
@@ -224,8 +222,8 @@ void DynamixelManager::tabWidgetCurrentIndexChanged(int index) {
 
 	switch(index) {
 	case 0: /* Operating */
-		connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(const DynamixelControlTableRAM *)),
-				this, SLOT(firstControlTableRAMUpdated(const DynamixelControlTableRAM *)));
+		connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
+				this, SLOT(firstControlTableRAMUpdated(quint8)));
 		/* Wyślij żądanie aktualizacji RAM */
 		emit updateControlTableRAM(ui->servosTreeView->currentIndex().data().toUInt());
 		break;
@@ -240,39 +238,39 @@ void DynamixelManager::tabWidgetCurrentIndexChanged(int index) {
 	TRI_LOG_STR("Out DynamixelManager::tabWidgetCurrentIndexChanged()");
 }
 
-void DynamixelManager::controlTableROMUpdated(const DynamixelControlTableROM *rom) {
+void DynamixelManager::controlTableROMUpdated(quint8 id) {
 	TRI_LOG_STR("In DynamixelManager::controlTableROMUpdated()");
 
-	QReadLocker readLocker(&(rom->locker));
-
-	/* Angle Limit i Operating Mode */
-	ui->jointModeRadioButton->setChecked(!(rom->ccwAngleLimit == 0 && rom->cwAngleLimit == 0) ? true : false);
-	ui->cwAngleLimitHorizontalSlider->setValue(rom->cwAngleLimit);
-	ui->ccwAngleLimitHorizontalSlider->setValue(rom->ccwAngleLimit);
-
-	/* Voltage Limit, temp limit, max torque */
-	ui->highVoltageLimitHorizontalSlider->setValue(rom->highestVolt);
-	ui->lowVoltageLimitHorizontalSlider->setValue(rom->lowestVolt);
-	ui->temperatureLimitVerticalSlider->setValue(rom->highestTemp);
-	ui->maxTorqueVerticalSlider->setValue(rom->maxTorque);
-
-	/* AlarmLED */
-	ui->instructionErrorAlarmCheckBox->setChecked(rom->instructionErrorAlarm);
-	ui->overloadErrorAlarmCheckBox->setChecked(rom->overloadErrorAlarm);
-	ui->checksumErrorAlarmCheckBox->setChecked(rom->checksumErrorAlarm);
-	ui->rangeErrorAlarmCheckBox->setChecked(rom->rangeErrorAlarm);
-	ui->overheatingErrorAlarmCheckBox->setChecked(rom->overheatingErrorAlarm);
-	ui->angleLimitErrorAlarmCheckBox->setChecked(rom->angleLimitErrorAlarm);
-	ui->inputVoltageErrorAlarmCheckBox->setChecked(rom->inputVoltageErrorAlarm);
-
-	/* AlarmShutdown */
-	ui->instructionErrorShutdownCheckBox->setChecked(rom->instructionErrorShutdown);
-	ui->overloadErrorShutdownCheckBox->setChecked(rom->overloadErrorShutdown);
-	ui->checksumErrorShutdownCheckBox->setChecked(rom->checksumErrorShutdown);
-	ui->rangeErrorShutdownCheckBox->setChecked(rom->rangeErrorShutdown);
-	ui->overheatingErrorShutdownCheckBox->setChecked(rom->overheatingErrorShutdown);
-	ui->angleLimitErrorShutdownCheckBox->setChecked(rom->angleLimitErrorShutdown);
-	ui->inputVoltageErrorShutdownCheckBox->setChecked(rom->inputVoltageErrorShutdown);
+//	QReadLocker readLocker(&(rom->locker));
+//
+//	/* Angle Limit i Operating Mode */
+//	ui->jointModeRadioButton->setChecked(!(rom->ccwAngleLimit == 0 && rom->cwAngleLimit == 0) ? true : false);
+//	ui->cwAngleLimitHorizontalSlider->setValue(rom->cwAngleLimit);
+//	ui->ccwAngleLimitHorizontalSlider->setValue(rom->ccwAngleLimit);
+//
+//	/* Voltage Limit, temp limit, max torque */
+//	ui->highVoltageLimitHorizontalSlider->setValue(rom->highestVolt);
+//	ui->lowVoltageLimitHorizontalSlider->setValue(rom->lowestVolt);
+//	ui->temperatureLimitVerticalSlider->setValue(rom->highestTemp);
+//	ui->maxTorqueVerticalSlider->setValue(rom->maxTorque);
+//
+//	/* AlarmLED */
+//	ui->instructionErrorAlarmCheckBox->setChecked(rom->instructionErrorAlarm);
+//	ui->overloadErrorAlarmCheckBox->setChecked(rom->overloadErrorAlarm);
+//	ui->checksumErrorAlarmCheckBox->setChecked(rom->checksumErrorAlarm);
+//	ui->rangeErrorAlarmCheckBox->setChecked(rom->rangeErrorAlarm);
+//	ui->overheatingErrorAlarmCheckBox->setChecked(rom->overheatingErrorAlarm);
+//	ui->angleLimitErrorAlarmCheckBox->setChecked(rom->angleLimitErrorAlarm);
+//	ui->inputVoltageErrorAlarmCheckBox->setChecked(rom->inputVoltageErrorAlarm);
+//
+//	/* AlarmShutdown */
+//	ui->instructionErrorShutdownCheckBox->setChecked(rom->instructionErrorShutdown);
+//	ui->overloadErrorShutdownCheckBox->setChecked(rom->overloadErrorShutdown);
+//	ui->checksumErrorShutdownCheckBox->setChecked(rom->checksumErrorShutdown);
+//	ui->rangeErrorShutdownCheckBox->setChecked(rom->rangeErrorShutdown);
+//	ui->overheatingErrorShutdownCheckBox->setChecked(rom->overheatingErrorShutdown);
+//	ui->angleLimitErrorShutdownCheckBox->setChecked(rom->angleLimitErrorShutdown);
+//	ui->inputVoltageErrorShutdownCheckBox->setChecked(rom->inputVoltageErrorShutdown);
 
 	TRI_LOG_STR("Out DynamixelManager::controlTableROMUpdated()");
 }
@@ -309,7 +307,7 @@ void DynamixelManager::controlTableRAMUpdated(quint8 id) {
 //	TRI_LOG_STR("In DynamixelManager::controlTableRAMUpdated()");
 }
 
-void DynamixelManager::firstControlTableRAMUpdated(const DynamixelControlTableRAM *ram) {
+void DynamixelManager::firstControlTableRAMUpdated(quint8 id) {
 	TRI_LOG_STR("In DynamixelManager::firstControlTableRAMUpdated()");
 
 	/* W celu uniknięcia włączenia momentu na silniku, podczas ustawiania sliderów
@@ -319,24 +317,24 @@ void DynamixelManager::firstControlTableRAMUpdated(const DynamixelControlTableRA
 	disconnect(ui->speedHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(speedChanged(int)));
 
 	{
-		QReadLocker readLocker(&(ram->locker));
+//		QReadLocker readLocker(&(ram->locker));
 		/* Inicjalizacja widgetów które można zmieniać */
 
 		/* Torque */
-		ui->torqueOnControlRadioButton->setChecked(ram->torqueEnable);
-		ui->torqueOffControlRadioButton->setChecked(!ram->torqueEnable);
-		/* LED */
-		ui->ledOnControlRadioButton->setChecked(ram->led);
-		ui->ledOffControlRadioButton->setChecked(!ram->led);
-		/* Speed */
-		ui->speedHorizontalSlider->setValue(ram->movingSpeed);
-		/* Goal Position */
-		ui->positionHorizontalSlider->setValue(ram->goalPosition);
+//		ui->torqueOnControlRadioButton->setChecked(ram->torqueEnable);
+//		ui->torqueOffControlRadioButton->setChecked(!ram->torqueEnable);
+//		/* LED */
+//		ui->ledOnControlRadioButton->setChecked(ram->led);
+//		ui->ledOffControlRadioButton->setChecked(!ram->led);
+//		/* Speed */
+//		ui->speedHorizontalSlider->setValue(ram->movingSpeed);
+//		/* Goal Position */
+//		ui->positionHorizontalSlider->setValue(ram->goalPosition);
 	}
 
 	/* Rozłączenie sygnału DynamixelBus::controlTableRAMUpdated z tym Slotem */
-	disconnect(dynamixelBus, SIGNAL(controlTableRAMUpdated(const DynamixelControlTableRAM *)),
-			this, SLOT(firstControlTableRAMUpdated(const DynamixelControlTableRAM *)));
+	disconnect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
+			this, SLOT(firstControlTableRAMUpdated(quint8)));
 
 	connect(ui->positionHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(positionChanged(int)));
 	connect(ui->speedHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(speedChanged(int)));
@@ -572,34 +570,34 @@ void DynamixelManager::applyConfiguration() {
 		return;
 
 	quint8 id = ui->servosTreeView->currentIndex().data().toUInt();
+//
+//	boost::shared_ptr<DynamixelControlTableROM> rom(new DynamixelControlTableROM);
+//
+//	rom->instructionErrorAlarm = ui->instructionErrorAlarmCheckBox->isChecked();
+//	rom->instructionErrorShutdown = ui->instructionErrorShutdownCheckBox->isChecked();
+//	rom->overloadErrorAlarm = ui->overloadErrorAlarmCheckBox->isChecked();
+//	rom->overloadErrorShutdown = ui->overloadErrorShutdownCheckBox->isChecked();
+//	rom->checksumErrorAlarm = ui->checksumErrorAlarmCheckBox->isChecked();
+//	rom->checksumErrorShutdown = ui->checksumErrorShutdownCheckBox->isChecked();
+//	rom->rangeErrorAlarm = ui->rangeErrorAlarmCheckBox->isChecked();
+//	rom->rangeErrorShutdown = ui->rangeErrorShutdownCheckBox->isChecked();
+//	rom->overheatingErrorAlarm = ui->overheatingErrorAlarmCheckBox->isChecked();
+//	rom->overheatingErrorShutdown = ui->overheatingErrorShutdownCheckBox->isChecked();
+//	rom->angleLimitErrorAlarm = ui->angleLimitErrorAlarmCheckBox->isChecked();
+//	rom->angleLimitErrorShutdown = ui->angleLimitErrorShutdownCheckBox->isChecked();
+//	rom->inputVoltageErrorAlarm = ui->inputVoltageErrorAlarmCheckBox->isChecked();
+//	rom->inputVoltageErrorShutdown = ui->inputVoltageErrorShutdownCheckBox->isChecked();
+//
+//	rom->ccwAngleLimit = ui->ccwAngleLimitHorizontalSlider->value();
+//	rom->cwAngleLimit = ui->cwAngleLimitHorizontalSlider->value();
+//	rom->highestVolt = ui->highVoltageLimitHorizontalSlider->value();
+//	rom->lowestVolt = ui->lowVoltageLimitHorizontalSlider->value();
+//	rom->highestTemp = ui->temperatureLimitVerticalSlider->value();
+//	rom->maxTorque = ui->maxTorqueVerticalSlider->value();
+//
+//	rom->id = id;
 
-	boost::shared_ptr<DynamixelControlTableROM> rom(new DynamixelControlTableROM);
-
-	rom->instructionErrorAlarm = ui->instructionErrorAlarmCheckBox->isChecked();
-	rom->instructionErrorShutdown = ui->instructionErrorShutdownCheckBox->isChecked();
-	rom->overloadErrorAlarm = ui->overloadErrorAlarmCheckBox->isChecked();
-	rom->overloadErrorShutdown = ui->overloadErrorShutdownCheckBox->isChecked();
-	rom->checksumErrorAlarm = ui->checksumErrorAlarmCheckBox->isChecked();
-	rom->checksumErrorShutdown = ui->checksumErrorShutdownCheckBox->isChecked();
-	rom->rangeErrorAlarm = ui->rangeErrorAlarmCheckBox->isChecked();
-	rom->rangeErrorShutdown = ui->rangeErrorShutdownCheckBox->isChecked();
-	rom->overheatingErrorAlarm = ui->overheatingErrorAlarmCheckBox->isChecked();
-	rom->overheatingErrorShutdown = ui->overheatingErrorShutdownCheckBox->isChecked();
-	rom->angleLimitErrorAlarm = ui->angleLimitErrorAlarmCheckBox->isChecked();
-	rom->angleLimitErrorShutdown = ui->angleLimitErrorShutdownCheckBox->isChecked();
-	rom->inputVoltageErrorAlarm = ui->inputVoltageErrorAlarmCheckBox->isChecked();
-	rom->inputVoltageErrorShutdown = ui->inputVoltageErrorShutdownCheckBox->isChecked();
-
-	rom->ccwAngleLimit = ui->ccwAngleLimitHorizontalSlider->value();
-	rom->cwAngleLimit = ui->cwAngleLimitHorizontalSlider->value();
-	rom->highestVolt = ui->highVoltageLimitHorizontalSlider->value();
-	rom->lowestVolt = ui->lowVoltageLimitHorizontalSlider->value();
-	rom->highestTemp = ui->temperatureLimitVerticalSlider->value();
-	rom->maxTorque = ui->maxTorqueVerticalSlider->value();
-
-	rom->id = id;
-
-	emit setConfiguration(id, rom);
+	emit setConfiguration(id);
 
 	TRI_LOG_STR("Out DynamixelManager::applyConfiguration()");
 }
