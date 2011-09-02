@@ -59,6 +59,10 @@ struct DynamixelServo {
     ram.punch = msblsb2quint16(data[25], data[24]);
   }
 
+  void setRAMData(const QByteArray & data) {
+    
+  }
+
   static quint16 msblsb2quint16(char msb, char lsb) {
     return (quint16) (((msb & 0xFF) << 8) | (lsb & 0xFF));
   }

@@ -205,40 +205,43 @@ void DynamixelManager::tabWidgetCurrentIndexChanged(int index) {
 }
 
 void DynamixelManager::controlTableROMUpdated(quint8 id) {
-  TRI_LOG_STR("In DynamixelManager::controlTableROMUpdated()");
+  QModelIndex index = ui->servosTreeView->currentIndex();
+  if (!index.isValid())
+    return;
 
-  //	QReadLocker readLocker(&(rom->locker));
-  //
-  //	/* Angle Limit i Operating Mode */
-  //	ui->jointModeRadioButton->setChecked(!(rom->ccwAngleLimit == 0 && rom->cwAngleLimit == 0) ? true : false);
-  //	ui->cwAngleLimitHorizontalSlider->setValue(rom->cwAngleLimit);
-  //	ui->ccwAngleLimitHorizontalSlider->setValue(rom->ccwAngleLimit);
-  //
-  //	/* Voltage Limit, temp limit, max torque */
-  //	ui->highVoltageLimitHorizontalSlider->setValue(rom->highestVolt);
-  //	ui->lowVoltageLimitHorizontalSlider->setValue(rom->lowestVolt);
-  //	ui->temperatureLimitVerticalSlider->setValue(rom->highestTemp);
-  //	ui->maxTorqueVerticalSlider->setValue(rom->maxTorque);
-  //
-  //	/* AlarmLED */
-  //	ui->instructionErrorAlarmCheckBox->setChecked(rom->instructionErrorAlarm);
-  //	ui->overloadErrorAlarmCheckBox->setChecked(rom->overloadErrorAlarm);
-  //	ui->checksumErrorAlarmCheckBox->setChecked(rom->checksumErrorAlarm);
-  //	ui->rangeErrorAlarmCheckBox->setChecked(rom->rangeErrorAlarm);
-  //	ui->overheatingErrorAlarmCheckBox->setChecked(rom->overheatingErrorAlarm);
-  //	ui->angleLimitErrorAlarmCheckBox->setChecked(rom->angleLimitErrorAlarm);
-  //	ui->inputVoltageErrorAlarmCheckBox->setChecked(rom->inputVoltageErrorAlarm);
-  //
-  //	/* AlarmShutdown */
-  //	ui->instructionErrorShutdownCheckBox->setChecked(rom->instructionErrorShutdown);
-  //	ui->overloadErrorShutdownCheckBox->setChecked(rom->overloadErrorShutdown);
-  //	ui->checksumErrorShutdownCheckBox->setChecked(rom->checksumErrorShutdown);
-  //	ui->rangeErrorShutdownCheckBox->setChecked(rom->rangeErrorShutdown);
-  //	ui->overheatingErrorShutdownCheckBox->setChecked(rom->overheatingErrorShutdown);
-  //	ui->angleLimitErrorShutdownCheckBox->setChecked(rom->angleLimitErrorShutdown);
-  //	ui->inputVoltageErrorShutdownCheckBox->setChecked(rom->inputVoltageErrorShutdown);
+  DynamixelServo dynamixelServo = index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ();
+  if (dynamixelServo.id != id)
+    return;
 
-  TRI_LOG_STR("Out DynamixelManager::controlTableROMUpdated()");
+
+  /* Angle Limit i Operating Mode */
+  ui->jointModeRadioButton->setChecked(!(dynamixelServo.rom.ccwAngleLimit == 0 && dynamixelServo.rom.cwAngleLimit == 0) ? true : false);
+  ui->cwAngleLimitHorizontalSlider->setValue(dynamixelServo.rom.cwAngleLimit);
+  ui->ccwAngleLimitHorizontalSlider->setValue(dynamixelServo.rom.ccwAngleLimit);
+
+  /* Voltage Limit, temp limit, max torque */
+  ui->highVoltageLimitHorizontalSlider->setValue(dynamixelServo.rom.highestVolt);
+  ui->lowVoltageLimitHorizontalSlider->setValue(dynamixelServo.rom.lowestVolt);
+  ui->temperatureLimitVerticalSlider->setValue(dynamixelServo.rom.highestTemp);
+  ui->maxTorqueVerticalSlider->setValue(dynamixelServo.rom.maxTorque);
+
+  /* AlarmLED */
+  ui->instructionErrorAlarmCheckBox->setChecked(dynamixelServo.rom.instructionErrorAlarm);
+  ui->overloadErrorAlarmCheckBox->setChecked(dynamixelServo.rom.overloadErrorAlarm);
+  ui->checksumErrorAlarmCheckBox->setChecked(dynamixelServo.rom.checksumErrorAlarm);
+  ui->rangeErrorAlarmCheckBox->setChecked(dynamixelServo.rom.rangeErrorAlarm);
+  ui->overheatingErrorAlarmCheckBox->setChecked(dynamixelServo.rom.overheatingErrorAlarm);
+  ui->angleLimitErrorAlarmCheckBox->setChecked(dynamixelServo.rom.angleLimitErrorAlarm);
+  ui->inputVoltageErrorAlarmCheckBox->setChecked(dynamixelServo.rom.inputVoltageErrorAlarm);
+
+  /* AlarmShutdown */
+  ui->instructionErrorShutdownCheckBox->setChecked(dynamixelServo.rom.instructionErrorShutdown);
+  ui->overloadErrorShutdownCheckBox->setChecked(dynamixelServo.rom.overloadErrorShutdown);
+  ui->checksumErrorShutdownCheckBox->setChecked(dynamixelServo.rom.checksumErrorShutdown);
+  ui->rangeErrorShutdownCheckBox->setChecked(dynamixelServo.rom.rangeErrorShutdown);
+  ui->overheatingErrorShutdownCheckBox->setChecked(dynamixelServo.rom.overheatingErrorShutdown);
+  ui->angleLimitErrorShutdownCheckBox->setChecked(dynamixelServo.rom.angleLimitErrorShutdown);
+  ui->inputVoltageErrorShutdownCheckBox->setChecked(dynamixelServo.rom.inputVoltageErrorShutdown);
 }
 
 void DynamixelManager::controlTableRAMUpdated(quint8 id) {
@@ -447,16 +450,6 @@ void DynamixelManager::pwmControlActivated(int index) {
       //		min = DYN_MIN_CCW_COMPLIANCE_SLOPE;
       //		max = DYN_MAX_CCW_COMPLIANCE_SLOPE;
       connect(ui->pwmControlHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(pwmCCWSlopeChanged(int)));
-      break;
-    case 4: /* Punch */
-      //		min = DYN_MIN_PUNCH;
-      //		max = DYN_MAX_PUNCH;
-      connect(ui->pwmControlHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(pwmPunchChanged(int)));
-      break;
-    case 5: /* Torque Limit */
-      //		min = DYN_MIN_TORQUE_LIMIT;
-      //		max = DYN_MAX_TORQUE_LIMIT;
-      connect(ui->pwmControlHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(pwmTorqueLimitChanged(int)));
       break;
     default: /* Default */
       break;

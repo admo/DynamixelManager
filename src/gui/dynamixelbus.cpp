@@ -390,18 +390,15 @@ void DynamixelBus::setReturnLevel(quint8 id, quint8 returnLevel) {
 
 void DynamixelBus::updateControlTableROM(quint8 id) {
   QMutexLocker locker(&runMutex);
-  TRI_LOG_STR("In DynamixelBus::updateControlTableROM(quint8)");
-
-  //	QVector<quint8> data(DYN_ROM_TABLE_LENGTH, 0);
-  //	int ret = dyn_read_data(dyn_param.get(), id, DYN_ADR_MODEL_NUMBER_L,
-  //													DYN_ROM_TABLE_LENGTH, data.data());
-  //	if (ret == DYN_NO_ERROR) {
-  //		dynamixelControlTableROM->setStructure(data);
-  //		emit controlTableROMUpdated(dynamixelControlTableROM.get());
-  //	} else
-  //		emit communicationError(id);
-
-  TRI_LOG_STR("Out DynamixelBus::updateControlTableROM(quint8)");
+  
+  QByteArray data;
+  
+  if (read(id, 0x00, 19, &data)) {
+    dynamixelServos.setROMData(id, data);
+    emit controlTableROMUpdated(id);
+  } else {
+    emit communicationError(id);
+  }
 }
 
 void DynamixelBus::updateControlTableRAM(quint8 id) {
