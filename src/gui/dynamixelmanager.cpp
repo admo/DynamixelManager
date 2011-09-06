@@ -6,12 +6,18 @@
 #include "tri_logger.hpp"
 //#include "dyn4lin.h"
 #include "baudrates.h"
+#include "serialdeviceenumerator.h"
 #include <boost/foreach.hpp>
 
 DynamixelManager::DynamixelManager(QWidget *parent) :
 QMainWindow(parent), ui(new Ui::DynamixelManager), complianceMapper(this),
 operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
   ui->setupUi(this);
+  
+  /* Ustawienie klasy QSettings */
+  QCoreApplication::setOrganizationName("admoSoft");
+  QCoreApplication::setOrganizationDomain("admo.pl");
+  QCoreApplication::setApplicationName("Dynamixel Manager");
 
   /* Tworzenie dialogów */
   selectSerialPortDialog = new SelectSerialPortDialog(this);
@@ -33,7 +39,6 @@ operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
   connect(ui->actionSearch, SIGNAL(triggered()), searchServosDialog, SLOT(exec()));
   connect(searchServosDialog, SIGNAL(add(quint8)), dynamixelBus, SLOT(add(quint8)));
   connect(dynamixelBus, SIGNAL(added(quint8, bool)), searchServosDialog, SLOT(added(quint8, bool)));
-  connect(searchServosDialog, SIGNAL(reset()), dynamixelBus, SLOT(reset()));
   /* Help */
   connect(ui->actionAbout_Dynamixel_Manager, SIGNAL(triggered()), this, SLOT(about()));
   connect(ui->actionAbout_Qt, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
@@ -110,12 +115,13 @@ operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
   connect(ui->cwAngleLimitSpinBox, SIGNAL(valueChanged(int)), ui->cwAngleLimitHorizontalSlider, SIGNAL(sliderMoved(int)));
   connect(&operatingModeMapper, SIGNAL(mapped(int)), this, SLOT(operatingModeAndAngleLimitChanged(int)));
 
-  connect(ui->setIDPushButton, SIGNAL(clicked()), this, SLOT(idChanged()));
-  connect(this, SIGNAL(setID(quint8, quint8)), dynamixelBus, SLOT(setID(quint8, quint8)));
-  connect(ui->setBaudratePushButton, SIGNAL(clicked()), this, SLOT(baudrateChanged()));
-  connect(ui->setReturnLevelPushButton, SIGNAL(clicked()), this, SLOT(returnLevelChanged()));
-  connect(this, SIGNAL(setReturnLevel(quint8, quint8)), dynamixelBus, SLOT(setReturnLevel(quint8, quint8)));
-  connect(ui->setReturnDelayPushButton, SIGNAL(clicked()), this, SLOT(returnDelayChanged()));
+  /* Jak to się ma do nowej zasady?!*/
+//  connect(ui->setIDPushButton, SIGNAL(clicked()), this, SLOT(idChanged()));
+//  connect(this, SIGNAL(setID(quint8, quint8)), dynamixelBus, SLOT(setID(quint8, quint8)));
+//  connect(ui->setBaudratePushButton, SIGNAL(clicked()), this, SLOT(baudrateChanged()));
+//  connect(ui->setReturnLevelPushButton, SIGNAL(clicked()), this, SLOT(returnLevelChanged()));
+//  connect(this, SIGNAL(setReturnLevel(quint8, quint8)), dynamixelBus, SLOT(setReturnLevel(quint8, quint8)));
+//  connect(ui->setReturnDelayPushButton, SIGNAL(clicked()), this, SLOT(returnDelayChanged()));
 
   voltageLimitMapper->setMapping(ui->highVoltageLimitHorizontalSlider, 0);
   voltageLimitMapper->setMapping(ui->lowVoltageLimitHorizontalSlider, 1);

@@ -294,7 +294,7 @@ void DynamixelBus::setStatRetLev(quint8 id, quint8 retLev) {
   }
 }
 
-void DynamixelBus::setAlarmLed(quint8 id, quint8 alarm) {
+void DynamixelBus::setAlarmLED(quint8 id, quint8 alarm) {
   QMutexLocker locker(&runMutex);
 
   bool ret = write(id, 0x11, QByteArray(1, alarm));

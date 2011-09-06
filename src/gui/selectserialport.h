@@ -4,6 +4,7 @@
 #include <QtGui/QDialog>
 #include <QString>
 #include <QStringList>
+#include <QSettings>
 
 namespace Ui {
     class SelectSerialPortDialog;
@@ -28,6 +29,7 @@ private:
     Ui::SelectSerialPortDialog *m_ui;
     SerialDeviceEnumerator *serialDeviceEnumerator;
     AbstractSerial *abstractSerial;
+    QSettings settings;
 
 private slots:
     void openDeviceEmit();

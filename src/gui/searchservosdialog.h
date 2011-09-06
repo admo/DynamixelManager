@@ -18,7 +18,6 @@ public:
 
 signals:
 	void add(const quint8 id);
-	void reset();
 
 public slots:
 	void added(quint8, bool);

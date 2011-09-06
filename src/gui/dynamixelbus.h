@@ -74,7 +74,7 @@ public slots:
   void setHiLimitVol(quint8, quint8);
   void setMaxTorque(quint8, quint16);
   void setStatRetLev(quint8, quint8);
-  void setAlarmLed(quint8, quint8);
+  void setAlarmLED(quint8, quint8);
   void setAlarmShutdonwn(quint8, quint8);
 
   void setPosition(quint8, quint16);
