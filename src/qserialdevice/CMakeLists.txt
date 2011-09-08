@@ -15,6 +15,14 @@ set ( QSERIALDEVICE_INCLUDE_DIRS
     CACHE string "Paths to include library headers."
 )
 
+if(UNIX)
+  set( LIB_INCLUDE_DIRS
+    ${LIB_INCLUDE_DIRS}
+    ${PROJECT_SOURCE_DIR}/unix
+    CACHE string "Paths to include library headers."
+    )
+endif()
+
 # LIBRARY_OUTPUT_PATH - path to contain the build output binary library,
 #                       this path is cached and useful in the future to build the /examples.
 # LIB_TARGET - target name of result output binary library file,
@@ -57,7 +65,7 @@ elseif(UNIX)
     set( QSERIALDEVICE_SRCS
         ${QSERIALDEVICE_SRCS}
         qserialdevice/nativeserialengine_unix.cpp
-        qserialdevice/ttylocker.cpp
+        unix/ttylocker.cpp
         qserialdevice/nativeserialnotifier_unix.cpp
     )
     if(APPLE)

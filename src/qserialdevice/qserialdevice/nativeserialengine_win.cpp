@@ -23,7 +23,23 @@
 
 #include "nativeserialengine_p.h"
 
-#include <ddk/ntddser.h>
+#ifndef Q_CC_MSVC
+#  include <ddk/ntddser.h>
+#else
+#ifndef IOCTL_SERIAL_GET_DTRRTS
+#define IOCTL_SERIAL_GET_DTRRTS \
+    CTL_CODE (FILE_DEVICE_SERIAL_PORT, 30, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#endif //Q_CC_MSVC
+
+#ifndef SERIAL_DTR_STATE
+#  define SERIAL_DTR_STATE                  0x00000001
+#endif
+
+#ifndef SERIAL_RTS_STATE
+#  define SERIAL_RTS_STATE                  0x00000002
+#endif
+
+#endif
 
 //#define NATIVESERIALENGINE_WIN_DEBUG
 

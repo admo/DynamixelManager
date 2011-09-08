@@ -44,7 +44,7 @@
 
 #include "serialdeviceenumerator.h"
 #include "serialdeviceenumerator_p.h"
-#include "../qserialdevice/ttylocker.h"
+#include "ttylocker.h"
 
 #define SERIALDEVICEENUMERATOR_MAC_DEBUG
 

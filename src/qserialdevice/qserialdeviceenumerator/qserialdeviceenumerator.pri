@@ -5,8 +5,6 @@ win32 {
     SOURCES += $$PWD/serialdeviceenumerator_p_win.cpp
 }
 unix {
-    HEADERS += $$PWD/../qserialdevice/ttylocker.h
-    SOURCES += $$PWD/../qserialdevice/ttylocker.cpp
     macx {
         SOURCES += $$PWD/serialdeviceenumerator_p_mac.cpp
     }

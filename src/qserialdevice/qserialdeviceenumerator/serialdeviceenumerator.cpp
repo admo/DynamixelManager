@@ -27,7 +27,11 @@
 
     \brief  Class SerialDeviceEnumerator monitors and receives information on all serial devices in the system.
 
+    \section sec0_SerialDeviceEnumerator Appointment and opportunities.
+
     This class is part of the library QSerialDevice and can be used in conjunction with the class AbstractSerial. \n
+
+    This class is a singleton with a pointer private static object. \n
 
     This class provides the following features:
     - Get a list of names of all available serial devices in the system.
@@ -54,7 +58,10 @@
 
     This class combines the functions, the such "obsolete" classes as: SerialDeviceWatcher and SerialDeviceInfo.
     Reason for joining was that SerialDeviceWatcher and SerialDeviceInfo use the same type code
-    have to duplicate and SerialDeviceWatcher and SerialDeviceInfo, as well as its "complexity".
+    have to duplicate and SerialDeviceWatcher and SerialDeviceInfo, as well as its "complexity". \n
+
+    \note This class is not thread safe and should be used only
+    in the context of the main application thread (GUI thread)!
 
     Differences implementation of SerialDeviceEnumerator SerialDeviceWatcher and SerialDeviceInfo:
     - Contains more than a simple code.
@@ -63,29 +70,50 @@
     - Faster and optimal update information on the devices at its request.
     .
 
-    \b A \b brief \b description \b use.
+    \section sec1_SerialDeviceEnumerator A brief description use.
     
-    Getting Started with the class should begin with creating an instance of an object SerialDeviceEnumerator. \n
+    Getting Started with the class should begin with a pointer to the singleton (object SerialDeviceEnumerator). \n
     Example:
     \code
         ...
-        SerialDeviceEnumerator *sde = new SerialDeviceEnumerator(this);
+        SerialDeviceEnumerator *sde = SerialDeviceEnumerator::instance();
         ...
     \endcode
 
-    By default, a new instance is created with a disabled control/tracking of the presence/absence of serial devices. \n
-    The proper function of the class is guaranteed only after the inclusion of the tracking mode. This is because the updated information on
-    devices only after calling setEnabled(), as well as after the update when deleting/adding the device.
+    \note By default, singleton mode control (monitoring) presence (absence) of a serial device is enabled.
 
-    \b Functions \b tracking \b and \b monitoring: \n
+    After that, you must associate the signals from SerialDeviceEnumerator slot information processing,
+    and for the first time forced to process a list of devices (hereinafter,
+    forced to handle a list of devices is not necessary). \n
+    Example:
+    \code
+        void MyAppOrClass::myInitMethodOrConstructor()
+        {
+            ...
+            SerialDeviceEnumerator *enumerator = SerialDeviceEnumerator::instance();
+            connect(enumerator, SIGNAL(hasChanged(QStringList)), this, SLOT(mySlotProcDevicesList(QStringList)));
+            mySlotProcDevicesList(enumerator->devicesAvailable());
+            ...
+        }
+
+        void MyAppOrClass::mySlotProcDevicesList(const QStringList &deviesList)
+        {
+            // Fill ports box (QComboBox), etc.
+            ui->portBox->clear();
+            ui->portBox->addItems(deviesList);
+        }
+    \endcode
+
+    \section sec2_SerialDeviceEnumerator Methods tracking and monitoring.
 
     To enable/disable monitoring for serial devices using the method:
     - void SerialDeviceEnumerator::setEnabled(bool enable) enables or disables monitoring.
+    \note Use this method is not desirable!
 
     For condition monitoring method is used:
     - bool SerialDeviceEnumerator::isEnabled() const returns the current mode of monitoring (tracking active or not).
 
-    \b Functions \b get \b info: \n
+    \section sec3_SerialDeviceEnumerator Methods get info.
 
     For a list of names of all available serial devices in the system using the method:
     - QStringList SerialDeviceEnumerator::devicesAvailable() const returns a list of names.
@@ -120,33 +148,14 @@
     - bool SerialDeviceEnumerator::isBusy() const chech serial device is busy.
     .
 
-    \note The above methods of obtaining information will return incorrect results in disabled mode of monitoring!
-    If you do not need a monitor, you can get information like this:
-    \code
-        ...
-        SerialDeviceEnumerator *sde = new SerialDeviceEnumerator(this);
+    \note The methods mentioned above will return incorrect results when disconnected mode monitoring
+    so disable monitoring method setEnabled() is not recommended!
+    And in general, not recommended to use the setEnabled(), this method is left to future developments.
 
-        sde->setEnabled(true);
-        sde->setEnabled(false);
-
-        //Now you can get a list of devices as method setEnabled(true) has updated its
-        qDebug() << sde->devicesAvailable();
-
-        sde->setDeviceName("COM1");
-        //Now you can get information on COM1
-        qDebug() << sde->friendlyName() << sde->description() ...;
-        ...
-    \endcode
-    But in this case after being called setEnabled(false) real device COM1 may be lost from the system (for example, pulled out the USB/Serial converter)
-    and then we get the wrong information on COM1 (ie the information that was before the removal).
-    It is therefore recommended that monitoring is always enabled.
-
-    \b Signals: \n
+    \section sec4_SerialDeviceEnumerator Signals.
 
     SerialDeviceEnumerator class implements the following signals:
     - void SerialDeviceEnumerator::hasChanged(const QStringList &list) automatically emitted when adding/removing the serial device.
-    \note The first method call setEnabled(true) signal is automatically emitted from the transfer of variable \a list
-    List names of all available current time serial devices.
 
     \n
     \n
@@ -261,6 +270,23 @@ bool SerialDeviceEnumeratorPrivate::nativeIsExists() const
 
 
 /*! \~english
+    Static object (Singleton).
+*/
+SerialDeviceEnumerator *SerialDeviceEnumerator::self = 0;
+
+/*! \~english
+    \fn SerialDeviceEnumerator *SerialDeviceEnumerator::instance()
+    Create object and returns a pointer to a static object (Singleton).
+    \return Pointer to SerialDeviceEnumerator.
+*/
+SerialDeviceEnumerator *SerialDeviceEnumerator::instance()
+{
+    if (!self)
+        self = new SerialDeviceEnumerator();
+    return self;
+}
+
+/*! \~english
     \fn SerialDeviceEnumerator::SerialDeviceEnumerator(QObject *parent)
     Default constructor.
 */
@@ -269,6 +295,8 @@ SerialDeviceEnumerator::SerialDeviceEnumerator(QObject *parent)
 {
     Q_D(SerialDeviceEnumerator);
     d->q_ptr = this;
+
+    this->setEnabled(true);
 }
 
 /*! \~english

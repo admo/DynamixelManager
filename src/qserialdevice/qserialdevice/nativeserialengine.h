@@ -71,13 +71,15 @@ public:
                             int msecs = 3000);
 
     bool isReadNotificationEnabled() const;
-    void setReadNotificationEnabled(bool enable);
+    void setReadNotificationEnabled(bool enable, bool onClose = false);
     bool isWriteNotificationEnabled() const;
-    void setWriteNotificationEnabled(bool enable);
+    void setWriteNotificationEnabled(bool enable, bool onClose = false);
     bool isExceptionNotificationEnabled() const;
-    void setExceptionNotificationEnabled(bool enable);
+    void setExceptionNotificationEnabled(bool enable, bool onClose = false);
     bool isLineNotificationEnabled() const;
-    void setLineNotificationEnabled(bool enable);
+    void setLineNotificationEnabled(bool enable, bool onClose = false);
+
+    void clearNotification();
 
 protected:
 

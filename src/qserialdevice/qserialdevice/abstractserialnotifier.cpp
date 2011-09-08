@@ -7,8 +7,11 @@ AbstractSerialNotifier *AbstractSerialNotifier::createSerialNotifier(NativeSeria
     return new NativeSerialNotifier(parent);
 }
 
-void AbstractSerialNotifier::setDescriptor(Serial::DESCRIPTOR descriptor)
+void AbstractSerialNotifier::deleteSerialNotifier(AbstractSerialNotifier *notifier)
 {
-    if (this->descriptor != descriptor)
-        this->descriptor = descriptor;
+    if (notifier) {
+        NativeSerialNotifier *nnotifier = reinterpret_cast <NativeSerialNotifier *> (notifier);
+        if (nnotifier)
+            delete nnotifier;
+    }
 }

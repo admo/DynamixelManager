@@ -314,6 +314,8 @@ public:
     qint64 bytesAvailable() const;
     qint64 bytesToWrite() const;
 
+    bool canReadLine() const;
+
     bool waitForReadyRead(int msecs = 5000);
     bool waitForBytesWritten(int msecs = 5000);
 
@@ -326,6 +328,7 @@ public:
 protected:
     qint64 readData(char *data, qint64 maxSize);
     qint64 writeData(const char *data, qint64 maxSize);
+    qint64 readLineData(char *data, qint64 maxlen);
 
     AbstractSerialPrivate * const d_ptr;
 

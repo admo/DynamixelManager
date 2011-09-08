@@ -125,6 +125,11 @@ QString AbstractSerialEngine::deviceName() const
     return d_func()->deviceName;
 }
 
+Serial::DESCRIPTOR AbstractSerialEngine::descriptor() const
+{
+    return d_func()->descriptor;
+}
+
 qint32 AbstractSerialEngine::baudRate(AbstractSerial::BaudRateDirection baudDir) const
 {
     switch (baudDir) {

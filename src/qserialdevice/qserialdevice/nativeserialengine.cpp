@@ -217,18 +217,20 @@ bool NativeSerialEngine::isReadNotificationEnabled() const
             && d->notifier->isReadNotificationEnabled());
 }
 
-void NativeSerialEngine::setReadNotificationEnabled(bool enable)
+void NativeSerialEngine::setReadNotificationEnabled(bool enable, bool onClose)
 {
     Q_D(NativeSerialEngine);
 
-    if (!d->notifier) {
-        if (enable && (QAbstractEventDispatcher::instance(thread())))
+    if (onClose)
+        enable = false;
+
+    if (!d->notifier && enable && QAbstractEventDispatcher::instance(thread()))
             d->notifier = AbstractSerialNotifier::createSerialNotifier(this);
-        else return;
-    }
-    if (enable)
-        d->notifier->setDescriptor(d->descriptor);
-    d->notifier->setReadNotificationEnabled(enable);
+
+    if (d->notifier)
+        d->notifier->setReadNotificationEnabled(enable);
+    if (onClose && d->notifier)
+        this->clearNotification();
 }
 
 bool NativeSerialEngine::isWriteNotificationEnabled() const
@@ -238,18 +240,20 @@ bool NativeSerialEngine::isWriteNotificationEnabled() const
             && d->notifier->isWriteNotificationEnabled());
 }
 
-void NativeSerialEngine::setWriteNotificationEnabled(bool enable)
+void NativeSerialEngine::setWriteNotificationEnabled(bool enable, bool onClose)
 {
     Q_D(NativeSerialEngine);
 
-    if (!d->notifier) {
-        if (enable && (QAbstractEventDispatcher::instance(thread())))
+    if (onClose)
+        enable = false;
+
+    if (!d->notifier && enable && QAbstractEventDispatcher::instance(thread()))
             d->notifier = AbstractSerialNotifier::createSerialNotifier(this);
-        else return;
-    }
-    if (enable)
-        d->notifier->setDescriptor(d->descriptor);
-    d->notifier->setWriteNotificationEnabled(enable);
+
+    if (d->notifier)
+        d->notifier->setWriteNotificationEnabled(enable);
+    if (onClose && d->notifier)
+        this->clearNotification();
 }
 
 bool NativeSerialEngine::isExceptionNotificationEnabled() const
@@ -259,18 +263,20 @@ bool NativeSerialEngine::isExceptionNotificationEnabled() const
             && d->notifier->isExceptionNotificationEnabled());
 }
 
-void NativeSerialEngine::setExceptionNotificationEnabled(bool enable)
+void NativeSerialEngine::setExceptionNotificationEnabled(bool enable, bool onClose)
 {
     Q_D(NativeSerialEngine);
 
-    if (!d->notifier) {
-        if (enable && (QAbstractEventDispatcher::instance(thread())))
+    if (onClose)
+        enable = false;
+
+    if (!d->notifier && enable && QAbstractEventDispatcher::instance(thread()))
             d->notifier = AbstractSerialNotifier::createSerialNotifier(this);
-        else return;
-    }
-    if (enable)
-        d->notifier->setDescriptor(d->descriptor);
-    d->notifier->setExceptionNotificationEnabled(enable);
+
+    if (d->notifier)
+        d->notifier->setExceptionNotificationEnabled(enable);
+    if (onClose && d->notifier)
+        this->clearNotification();
 }
 
 bool NativeSerialEngine::isLineNotificationEnabled() const
@@ -280,18 +286,28 @@ bool NativeSerialEngine::isLineNotificationEnabled() const
             && d->notifier->isLineNotificationEnabled());
 }
 
-void NativeSerialEngine::setLineNotificationEnabled(bool enable)
+void NativeSerialEngine::setLineNotificationEnabled(bool enable, bool onClose)
 {
     Q_D(NativeSerialEngine);
 
-    if (!d->notifier) {
-        if (enable && (QAbstractEventDispatcher::instance(thread())))
+    if (onClose)
+        enable = false;
+
+    if (!d->notifier && enable && QAbstractEventDispatcher::instance(thread()))
             d->notifier = AbstractSerialNotifier::createSerialNotifier(this);
-        else return;
-    }
-    if (enable)
-        d->notifier->setDescriptor(d->descriptor);
-    d->notifier->setLineNotificationEnabled(enable);
+
+    if (d->notifier)
+        d->notifier->setLineNotificationEnabled(enable);
+    if (onClose && d->notifier)
+        this->clearNotification();
+}
+
+void NativeSerialEngine::clearNotification()
+{
+    Q_D(NativeSerialEngine);
+
+    AbstractSerialNotifier::deleteSerialNotifier(d->notifier);
+    d->notifier = 0;
 }
 
 //add 05.11.2009  (while is not used, reserved)

@@ -37,7 +37,7 @@ extern "C"
 
 #include "serialdeviceenumerator.h"
 #include "serialdeviceenumerator_p.h"
-#include "../qserialdevice/ttylocker.h"
+#include "../unix/ttylocker.h"
 
 //#define SERIALDEVICEENUMERATOR_UNIX_DEBUG
 

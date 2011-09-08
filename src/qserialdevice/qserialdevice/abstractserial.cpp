@@ -27,35 +27,14 @@
 
     \brief Class AbstractSerial provides an interface to work with serial devices.
 
+    \section sec0_AbstractSerial Appointment and opportunities.
+
     This class is cross-platform library that uses low-level native API
     to access serial devices. \n
     The class uses Qt4 framework and can be used to create applications Qt4. \n
 
     When you implement the class structure AbstractSerial for the basic structure has been chosen the class structure \b QAbstractSocket,
     in which the class is inherited from \b QIODevice and corresponds to the ideology of public/private classes \b pimpl. \n
-
-    By \b QIODevice override and implement the following virtual methods (see the documentation about the Qt4 class \b QIODevice): \n
-    \b Public \b methods:
-    - qint64 bytesAvailable() const
-    - qint64 bytesToWrite() const
-    - void close()
-    - bool isSequential() const
-    - bool open(OpenMode mode)
-    - bool reset()
-    - bool waitForBytesWritten(int msecs)
-    - bool waitForReadyRead(int msecs)
-    .
-
-    \b Protected \b methods:
-    - qint64 readData(char *data, qint64 maxSize)
-    - qint64 writeData(const char *data, qint64 maxSize)
-    .
-
-    \b Signals:
-    - void bytesWritten(qint64 bytes)
-    - void readyRead()
-
-    \note Other methods \b QIODevice remained untouched (by default).
 
     Class AbstractSerial supported on the following operating systems:
 
@@ -66,7 +45,36 @@
     <TR><TD> Mac OSX </TD><TD> Yes </TD><TD> May be a problem. To test. </TD></TR>
     </TABLE>
 
-    \b A \b brief \b description \b use.
+    \section sec1_AbstractSerial Basic virtual methods are overridden by QIODevice.
+
+    \note See the documentation about the Qt4 class \b QIODevice.
+
+    \subsection ss1_sec1_AbstractSerial Public methods.
+
+    - qint64 bytesAvailable() const
+    - qint64 bytesToWrite() const
+    - void close()
+    - bool isSequential() const
+    - bool open(OpenMode mode)
+    - bool reset()
+    - bool waitForBytesWritten(int msecs)
+    - bool waitForReadyRead(int msecs)
+    .
+
+    \subsection ss2_sec1_AbstractSerial Protected methods.
+
+    - qint64 readData(char *data, qint64 maxSize)
+    - qint64 writeData(const char *data, qint64 maxSize)
+    .
+
+    \subsection ss3_sec1_AbstractSerial Signals.
+
+    - void bytesWritten(qint64 bytes)
+    - void readyRead()
+
+    \note Other methods \b QIODevice remained untouched (by default).
+
+    \section sec2_AbstractSerial A brief description use.
 
     Getting Started with the class should begin with the creation of an object instance AbstractSerial.\n
     Example:
@@ -646,6 +654,7 @@ bool AbstractSerialPrivate::flush()
     qint64 written = this->serialEngine->write(ptr, nextSize);
     if (written < 0) {
         //TODO: Here emit error?
+        this->writeBuffer.clear();
         return false;
     }
 
@@ -782,10 +791,10 @@ void AbstractSerial::close()
 {
     Q_D(AbstractSerial);
     if (this->isOpen()) {
-        d->serialEngine->setReadNotificationEnabled(false);
-        d->serialEngine->setWriteNotificationEnabled(false);
-        //d->serialEngine->setExceptionNotificationEnabled(false);
-        d->serialEngine->setLineNotificationEnabled(false);
+        d->serialEngine->setReadNotificationEnabled(false, true);
+        d->serialEngine->setWriteNotificationEnabled(false, true);
+        //d->serialEngine->setExceptionNotificationEnabled(false, true);
+        d->serialEngine->setLineNotificationEnabled(false, true);
         ///
         d->clearBuffers();
         d->serialEngine->close();
@@ -1467,6 +1476,16 @@ qint64 AbstractSerial::bytesToWrite() const
     return qint64(d->writeBuffer.size());
 }
 
+/*! \~english
+    Returns true if a line of data can be read from the serial;
+    otherwise returns false.
+*/
+bool AbstractSerial::canReadLine() const
+{
+    bool hasLine = d_func()->readBuffer.canReadLine();
+    return hasLine || QIODevice::canReadLine();
+}
+
 /*
    Returns the difference between msecs and elapsed. If msecs is -1,
    however, -1 is returned.
@@ -1723,6 +1742,12 @@ qint64 AbstractSerial::writeData(const char *data, qint64 maxSize)
         d->serialEngine->setWriteNotificationEnabled(true);
 
     return written;
+}
+
+/*! reimpl */
+qint64 AbstractSerial::readLineData(char *data, qint64 maxlen)
+{
+    return QIODevice::readLineData(data, maxlen);
 }
 
 

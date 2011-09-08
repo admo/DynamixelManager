@@ -8,7 +8,7 @@ class AbstractSerialNotifier
 {
 public:
     static AbstractSerialNotifier *createSerialNotifier(NativeSerialEngine *parent);
-    void setDescriptor(Serial::DESCRIPTOR descriptor);
+    static void deleteSerialNotifier(AbstractSerialNotifier *notifier);
 
     virtual bool isReadNotificationEnabled() const = 0;
     virtual void setReadNotificationEnabled(bool enable) = 0;
@@ -20,7 +20,6 @@ public:
     virtual void setLineNotificationEnabled(bool enable) = 0;
 
 protected:
-    Serial::DESCRIPTOR descriptor;
     NativeSerialEngine *engine;
 };
 

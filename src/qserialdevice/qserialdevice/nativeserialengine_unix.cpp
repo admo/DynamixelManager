@@ -23,7 +23,7 @@
 
 #include <QtCore/QDir>
 
-#include "qcore_unix_p.h"
+#include "../unix/qcore_unix_p.h"
 
 #include <errno.h>
 #include <sys/time.h>
@@ -804,26 +804,27 @@ bool NativeSerialEnginePrivate::nativeReset() const
 
 qint64 NativeSerialEnginePrivate::nativeBytesAvailable() const
 {
-    size_t nbytes = 0;
+    qint64 nbytes = 0;
     //TODO: whether there has been done to build a multi-platform *.nix. (FIONREAD) ?
+    int arg = 0;
 #if defined (FIONREAD)
-    if (-1 == ::ioctl(this->descriptor, FIONREAD, &nbytes))
+    arg = FIONREAD;
 #else
-    if (-1 == ::ioctl(this->descriptor, TIOCINQ, &nbytes))
+    arg = TIOCINQ;
 #endif
-    {
+    if (-1 == ::ioctl(this->descriptor, arg, &nbytes)) {
 #if defined (NATIVESERIALENGINE_UNIX_DEBUG)
             qDebug("Linux: NativeSerialEnginePrivate::nativeBytesAvailable(bool wait) \n"
                    " -> function: ::ioctl(this->descriptor, FIONREAD, &nbytes) returned: -1. Error! \n");
 #endif
         nbytes = -1;
     }
-    return qint64(nbytes);
+    return nbytes;
 }
 
 qint64 NativeSerialEnginePrivate::nativeWrite(const char *data, qint64 len)
 {
-    ssize_t bytesWritten = qt_safe_write(this->descriptor, (const void *)data, (size_t)len);
+    qint64 bytesWritten = qt_safe_write(this->descriptor, (const void *)data, (size_t)len);
 
     this->nativeFlush();
 
@@ -853,7 +854,7 @@ qint64 NativeSerialEnginePrivate::nativeWrite(const char *data, qint64 len)
         }
     }
 
-    return quint64(bytesWritten);
+    return bytesWritten;
 }
 
 //FIXME
@@ -873,7 +874,7 @@ qint64 NativeSerialEnginePrivate::nativeRead(char *data, qint64 len)
         So I had to use ::select(). Other solution I have found.
 
     */
-    ssize_t bytesReaded = 0;
+    qint64 bytesReaded = 0;
 
     QTime readDelay;
     readDelay.start();
@@ -884,7 +885,7 @@ qint64 NativeSerialEnginePrivate::nativeRead(char *data, qint64 len)
     int msecs = this->charIntervalTimeout / 1000;
 
     do {
-        ssize_t readFromDevice = qt_safe_read(this->descriptor, (void*)data, len - bytesReaded);
+        qint64 readFromDevice = qt_safe_read(this->descriptor, (void*)data, len - bytesReaded);
         if (readFromDevice < 0) {
             bytesReaded = readFromDevice;
             break;
@@ -926,7 +927,7 @@ qint64 NativeSerialEnginePrivate::nativeRead(char *data, qint64 len)
         }
     }
 
-    return quint64(bytesReaded);
+    return bytesReaded;
 }
 
 int NativeSerialEnginePrivate::nativeSelect(int timeout,

@@ -64,6 +64,8 @@ public:
     void setDeviceName(const QString &deviceName);
     QString deviceName() const;
 
+    Serial::DESCRIPTOR descriptor() const;
+
     virtual bool open(QIODevice::OpenMode mode) = 0;
     virtual void close() = 0;
 
@@ -110,13 +112,13 @@ public:
     AbstractSerial::Status status() const;
 
     virtual bool isReadNotificationEnabled() const = 0;
-    virtual void setReadNotificationEnabled(bool enable) = 0;
+    virtual void setReadNotificationEnabled(bool enable, bool onClose = false) = 0;
     virtual bool isWriteNotificationEnabled() const = 0;
-    virtual void setWriteNotificationEnabled(bool enable) = 0;
+    virtual void setWriteNotificationEnabled(bool enable, bool onClose = false) = 0;
     virtual bool isExceptionNotificationEnabled() const = 0;
-    virtual void setExceptionNotificationEnabled(bool enable) = 0;
+    virtual void setExceptionNotificationEnabled(bool enable, bool onClose = false) = 0;
     virtual bool isLineNotificationEnabled() const = 0;
-    virtual void setLineNotificationEnabled(bool enable) = 0;
+    virtual void setLineNotificationEnabled(bool enable, bool onClose = false) = 0;
 
     void setReceiver(AbstractSerialEngineReceiver *receiver);
 

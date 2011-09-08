@@ -41,8 +41,8 @@ Q_SIGNALS:
     void hasChanged(const QStringList &list);
 
 public:
-    explicit SerialDeviceEnumerator(QObject *parent = 0);
-    virtual ~SerialDeviceEnumerator();
+
+    static SerialDeviceEnumerator *instance();
 
     void setEnabled(bool enable);
     bool isEnabled() const;
@@ -76,6 +76,11 @@ protected:
     SerialDeviceEnumeratorPrivate * const d_ptr;
 
 private:
+    explicit SerialDeviceEnumerator(QObject *parent = 0);
+    virtual ~SerialDeviceEnumerator();
+
+    static SerialDeviceEnumerator *self;
+
     Q_DECLARE_PRIVATE(SerialDeviceEnumerator)
     Q_DISABLE_COPY(SerialDeviceEnumerator)
     Q_PRIVATE_SLOT(d_func(),void _q_processWatcher())

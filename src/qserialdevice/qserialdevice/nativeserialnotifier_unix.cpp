@@ -12,8 +12,20 @@ NativeSerialNotifier::NativeSerialNotifier(NativeSerialEngine *parent)
         , exceptionNotifier(0)
         , running(false)
 {
-    this->descriptor = -1;
     this->engine = parent;
+}
+
+NativeSerialNotifier::~NativeSerialNotifier()
+{
+    if (this->readNotifier)
+        this->readNotifier->setEnabled(false);
+    if (this->writeNotifier)
+        this->writeNotifier->setEnabled(false);
+    if (this->exceptionNotifier)
+        this->exceptionNotifier->setEnabled(false);
+
+    this->running = false;
+    wait(1000);
 }
 
 bool NativeSerialNotifier::isReadNotificationEnabled() const
@@ -28,7 +40,7 @@ void NativeSerialNotifier::setReadNotificationEnabled(bool enable)
     }
     else {
         if (enable) {
-            this->readNotifier = new QSocketNotifier(this->descriptor, QSocketNotifier::Read, this);
+            this->readNotifier = new QSocketNotifier(this->engine->descriptor(), QSocketNotifier::Read, this);
             this->readNotifier->installEventFilter(this);
             this->readNotifier->setEnabled(true);
         }
@@ -47,7 +59,7 @@ void NativeSerialNotifier::setWriteNotificationEnabled(bool enable)
     }
     else {
         if (enable) {
-            this->writeNotifier = new QSocketNotifier(this->descriptor, QSocketNotifier::Write, this);
+            this->writeNotifier = new QSocketNotifier(this->engine->descriptor(), QSocketNotifier::Write, this);
             this->writeNotifier->installEventFilter(this);
             this->writeNotifier->setEnabled(true);
         }
@@ -66,7 +78,7 @@ void NativeSerialNotifier::setExceptionNotificationEnabled(bool enable)
     }
     else {
         if (enable) {
-            this->exceptionNotifier = new QSocketNotifier(this->descriptor, QSocketNotifier::Exception, this);
+            this->exceptionNotifier = new QSocketNotifier(this->engine->descriptor(), QSocketNotifier::Exception, this);
             this->exceptionNotifier->installEventFilter(this);
             this->exceptionNotifier->setEnabled(true);
         }
@@ -111,7 +123,7 @@ void NativeSerialNotifier::run()
     static int oldLine = 0;
     int currLine = 0;
     while (this->running) {
-        if ((-1 != ::ioctl(this->descriptor, TIOCMGET, &currLine))
+        if ((-1 != ::ioctl(this->engine->descriptor(), TIOCMGET, &currLine))
             && (currLine != oldLine)) {
 
             oldLine = currLine;

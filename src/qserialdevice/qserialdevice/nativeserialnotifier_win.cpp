@@ -6,11 +6,16 @@ NativeSerialNotifier::NativeSerialNotifier(NativeSerialEngine *parent)
         , currentMask(0)
         , setMask(0)
 {
-    this->descriptor = INVALID_HANDLE_VALUE;
     this->engine = parent;
     ::memset(&this->o, 0, sizeof(::OVERLAPPED));
     this->o.hEvent = ::CreateEvent(0, false, false, 0);
     this->setHandle(this->o.hEvent);
+}
+
+NativeSerialNotifier::~NativeSerialNotifier()
+{
+    this->setEnabled(false);
+    ::CloseHandle(this->o.hEvent);
 }
 
 bool NativeSerialNotifier::isReadNotificationEnabled() const
@@ -92,16 +97,16 @@ bool NativeSerialNotifier::event(QEvent *e)
     else
         ret = QWinEventNotifier::event(e);
 
-    ::WaitCommEvent(this->descriptor, &this->currentMask, &this->o);
+    ::WaitCommEvent(this->engine->descriptor(), &this->currentMask, &this->o);
     return ret;
 }
 
 void NativeSerialNotifier::setMaskAndActivateEvent()
 {
-    ::SetCommMask(this->descriptor, this->setMask);
+    ::SetCommMask(this->engine->descriptor(), this->setMask);
 
     if (this->setMask)
-        ::WaitCommEvent(this->descriptor, &this->currentMask, &this->o);
+        ::WaitCommEvent(this->engine->descriptor(), &this->currentMask, &this->o);
 
     switch (this->setMask) {
     case 0:

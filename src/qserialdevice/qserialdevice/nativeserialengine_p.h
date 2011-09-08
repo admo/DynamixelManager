@@ -8,7 +8,7 @@
   #include <qt_windows.h>
 #else
   #include <termios.h>
-  #include "ttylocker.h"
+  #include "../unix/ttylocker.h"
 #endif
 
 #ifndef READ_CHUNKSIZE

@@ -10,12 +10,12 @@ SOURCES += $$PWD/abstractserial.cpp \
     $$PWD/abstractserialengine.cpp \
     $$PWD/nativeserialengine.cpp \
     $$PWD/abstractserialnotifier.cpp
-win32:SOURCES += $$PWD/nativeserialengine_win.cpp \
+win32 {
+    SOURCES += $$PWD/nativeserialengine_win.cpp \
         $$PWD/nativeserialnotifier_win.cpp
+}
 unix { 
-    HEADERS += $$PWD/ttylocker.h
     SOURCES += $$PWD/nativeserialengine_unix.cpp \
-        $$PWD/ttylocker.cpp \
         $$PWD/nativeserialnotifier_unix.cpp
 }
 INCLUDEPATH += $$PWD

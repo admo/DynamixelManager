@@ -19,6 +19,7 @@ class NativeSerialNotifier : public QWinEventNotifier, public AbstractSerialNoti
 {
 public:
     NativeSerialNotifier(NativeSerialEngine *parent);
+    virtual ~NativeSerialNotifier();
 
     bool isReadNotificationEnabled() const;
     void setReadNotificationEnabled(bool enable);
@@ -44,6 +45,7 @@ class NativeSerialNotifier : public QThread, public AbstractSerialNotifier
 {
 public:
     NativeSerialNotifier(NativeSerialEngine *parent);
+    virtual ~NativeSerialNotifier();
 
     bool isReadNotificationEnabled() const;
     void setReadNotificationEnabled(bool enable);

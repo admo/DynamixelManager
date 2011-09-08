@@ -74,8 +74,10 @@ SerialDeviceEnumeratorPrivate::SerialDeviceEnumeratorPrivate()
 
 SerialDeviceEnumeratorPrivate::~SerialDeviceEnumeratorPrivate()
 {
-    if (this->notifier)
+    if (this->notifier) {
         this->notifier->setEnabled(false);
+        delete this->notifier;
+    }
 
     if (this->eHandle)
         ::CloseHandle(this->eHandle);
@@ -427,11 +429,7 @@ SerialInfoMap SerialDeviceEnumeratorPrivate::updateInfo() const
 {
    SerialInfoMap info;
 
-   /* Where 2 - is two count devclass ports guid:
-      1. GUID_DEVCLASS_PORTS
-      2. GUID_DEVCLASS_VIRTUAL_PORTS
-    */
-   int guidCount = sizeof(guidArray);
+   static int guidCount = sizeof(guidArray)/sizeof(::GUID);
    for (int i = 0; i < guidCount; ++i) {
 
        ::HDEVINFO DeviceInfoSet = ::SetupDiGetClassDevs(&guidArray[i],

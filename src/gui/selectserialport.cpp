@@ -3,8 +3,6 @@
 #include "serialdeviceenumerator.h"
 #include "abstractserial.h"
 
-#include <qt4/QtGui/qpushbutton.h>
-
 SelectSerialPortDialog::SelectSerialPortDialog(QWidget *parent) :
 QDialog(parent),
 m_ui(new Ui::SelectSerialPortDialog) {
@@ -18,7 +16,7 @@ m_ui(new Ui::SelectSerialPortDialog) {
           this, SLOT(selectedDeviceChanged(QString)));
 
   /* Serial device enumerator */
-  serialDeviceEnumerator = new SerialDeviceEnumerator(this);
+  serialDeviceEnumerator = SerialDeviceEnumerator::instance();
   connect(this->serialDeviceEnumerator, SIGNAL(hasChanged(QStringList)),
           this, SLOT(listOfSerialDevicesChanged(QStringList)));
   serialDeviceEnumerator->setEnabled(true);
@@ -27,7 +25,6 @@ m_ui(new Ui::SelectSerialPortDialog) {
 }
 
 SelectSerialPortDialog::~SelectSerialPortDialog() {
-  delete serialDeviceEnumerator;
   delete abstractSerial;
   delete m_ui;
 }
