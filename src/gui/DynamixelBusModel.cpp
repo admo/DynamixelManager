@@ -6,13 +6,11 @@
  */
 
 #include "DynamixelBusModel.h"
-#include "tri_logger.hpp"
 
 #include <QIcon>
 #include <QString>
-#include <sys/socket.h>
 
-DynamixelBusModel::DynamixelBusModel(const AbstractSerial& serial, const DynamixelServos& servos, QObject* parent) :
+DynamixelBusModel::DynamixelBusModel(const AbstractSerial* serial, const DynamixelServos& servos, QObject* parent) :
 serialDevice(serial), dynamixelServos(servos) {//  opened(false), deviceName(), baudrate(), dynamixelBus(dB) {
   if (parent) {
     connect(parent, SIGNAL(deviceOpened(bool)), this, SLOT(deviceOpened(bool)));
@@ -23,15 +21,15 @@ serialDevice(serial), dynamixelServos(servos) {//  opened(false), deviceName(), 
 }
 
 QModelIndex DynamixelBusModel::index(int row, int column, const QModelIndex& parent) const {
-  if (!serialDevice.isOpen() || row < 0 || column < 0)
+  if (!serialDevice->isOpen() || row < 0 || column < 0)
     return QModelIndex();
-
+  
   IndexType indexType = parent.isValid() ? static_cast<IndexType> (parent.internalId()) : IndexTypeRoot;
   switch (indexType) {
     case IndexTypeRoot:
-      return createIndex(0, 0, IndexTypeDeviceName);
+      return createIndex(row, column, IndexTypeDeviceName);
     case IndexTypeDeviceName:
-      return createIndex(0, 0, IndexTypeID);
+      return createIndex(row, column, IndexTypeID);
       //		case IndexTypeBaudRate:
       //			return row < dyn_id.size() ? createIndex(row, 0, IndexTypeID) : QModelIndex();
     case IndexTypeID:
@@ -42,7 +40,7 @@ QModelIndex DynamixelBusModel::index(int row, int column, const QModelIndex& par
 }
 
 QModelIndex DynamixelBusModel::parent(const QModelIndex& child) const {
-  if (!serialDevice.isOpen())
+  if (!serialDevice->isOpen())
     return QModelIndex();
 
   IndexType indexType = child.isValid() ? static_cast<IndexType> (child.internalId()) : IndexTypeRoot;
@@ -61,7 +59,7 @@ QModelIndex DynamixelBusModel::parent(const QModelIndex& child) const {
 }
 
 int DynamixelBusModel::rowCount(const QModelIndex& parent) const {
-  if (!serialDevice.isOpen())
+  if (!serialDevice->isOpen())
     return 0;
 
   IndexType indexType = parent.isValid() ? static_cast<IndexType> (parent.internalId()) : IndexTypeRoot;
@@ -82,7 +80,7 @@ QVariant DynamixelBusModel::data(const QModelIndex& index, int role) const {
     {
       switch (indexType) {
         case IndexTypeDeviceName:
-          return QString("%1@%2").arg(serialDevice.deviceName()).arg(serialDevice.baudRate());
+          return QString("%1@%2").arg(serialDevice->deviceName()).arg(serialDevice->baudRate());
         case IndexTypeID:
           return QString("ID:%1").arg(dynamixelServos[index.row()].id);
       }
@@ -113,7 +111,7 @@ QVariant DynamixelBusModel::data(const QModelIndex& index, int role) const {
 }
 
 void DynamixelBusModel::deviceOpened(bool isOpened) {
-  if (serialDevice.isOpen()) {
+  if (serialDevice->isOpen()) {
     reset();
   }
 }

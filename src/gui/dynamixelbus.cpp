@@ -1,4 +1,4 @@
-#include "tri_logger.hpp"
+#include "abstractserial.h"
 #include "DynamixelBusModel.h"
 #include "dynamixelbus.h"
 
@@ -7,9 +7,10 @@
 #include <stdexcept>
 
 DynamixelBus::DynamixelBus() :
-dynamixelBusModel(new DynamixelBusModel(serialDevice, dynamixelServos, this)) {
+serialDevice(new AbstractSerial(this)), dynamixelBusModel(new DynamixelBusModel(serialDevice, dynamixelServos, this)) {
   start();
   moveToThread(this); //Przenieś obsługę slotów do własnej pętli zdażeń
+  ;
 }
 
 DynamixelBus::~DynamixelBus() {
@@ -20,6 +21,7 @@ DynamixelBus::~DynamixelBus() {
   wait();
 
   closeDevice();
+  delete serialDevice;
 }
 
 void DynamixelBus::run() {
@@ -29,37 +31,34 @@ void DynamixelBus::run() {
 void DynamixelBus::openDevice(const QString& device, const QString& baud) {
   QMutexLocker locker(&runMutex);
 
-  serialDevice.setDeviceName(device);
-  if (serialDevice.open(AbstractSerial::ReadWrite | AbstractSerial::Unbuffered)) {
+  serialDevice->setDeviceName(device);
+  if (serialDevice->open(AbstractSerial::ReadWrite | AbstractSerial::Unbuffered)) {
     try {
-      if (!serialDevice.setBaudRate(baud))
+      if (!serialDevice->setBaudRate(baud))
         throw std::runtime_error("Set baud rate error.");
-      if (!serialDevice.setDataBits(AbstractSerial::DataBits8))
+      if (!serialDevice->setDataBits(AbstractSerial::DataBits8))
         throw std::runtime_error("Set data bits error.");
-      if (!serialDevice.setParity(AbstractSerial::ParityNone))
+      if (!serialDevice->setParity(AbstractSerial::ParityNone))
         throw std::runtime_error("Set parity error.");
-      if (!serialDevice.setStopBits(AbstractSerial::StopBits1))
+      if (!serialDevice->setStopBits(AbstractSerial::StopBits1))
         throw std::runtime_error("Set stop bits error.");
-      if (!serialDevice.setFlowControl(AbstractSerial::FlowControlOff))
+      if (!serialDevice->setFlowControl(AbstractSerial::FlowControlOff))
         throw std::runtime_error("Set flow error.");
     } catch (std::runtime_error& err) {
-      TRI_LOG_STR(err.what());
       return;
     }
   }
 
-  emit deviceOpened(serialDevice.isOpen());
+  emit deviceOpened(serialDevice->isOpen());
 }
 
 void DynamixelBus::closeDevice() {
   QMutexLocker locker(&runMutex);
-  serialDevice.close();
+  serialDevice->close();
 
   emit deviceClosed();
 
   dynamixelServos.clear();
-
-  //  dynamixelBusModel->closeDevice();
 }
 
 quint8 DynamixelBus::checksum(const QByteArray::const_iterator& begin, const QByteArray::const_iterator& end) const {
@@ -92,14 +91,14 @@ bool DynamixelBus::processCommunication(quint8 id, quint8 instruction, const QBy
   //  }
   //  std::cout << std::endl;
 
-  serialDevice.write(frame);
+  serialDevice->write(frame);
 
   quint8 responseLength = computeResponseLength(id, instruction, sendData);
   quint8 bytesRead = 0;
 
   frame.clear();
-  while (responseLength > bytesRead && serialDevice.waitForReadyRead(200))
-    bytesRead = frame.append(serialDevice.read(responseLength - bytesRead)).size();
+  while (responseLength > bytesRead && serialDevice->waitForReadyRead(200))
+    bytesRead = frame.append(serialDevice->read(responseLength - bytesRead)).size();
 
   // Sprawdzic checksum
 

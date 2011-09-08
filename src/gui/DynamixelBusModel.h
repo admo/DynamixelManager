@@ -16,23 +16,25 @@
 class DynamixelBusModel : public QAbstractItemModel {
   Q_OBJECT
 private:
-  const AbstractSerial& serialDevice;
+  const AbstractSerial* serialDevice;
   const DynamixelServos& dynamixelServos;
+
+private slots:
+  void deviceOpened(bool);
+  void deviceClosed();
+  void dynamixelServosChanged(quint8, bool);
+
+public:
+
+  enum {
+    ServoRole = Qt::UserRole
+  };
 
   enum IndexType {
     IndexTypeRoot, IndexTypeDeviceName, IndexTypeBaudRate, IndexTypeID
   };
 
-private slots:
-  void deviceOpened(bool);
-  void deviceClosed();
-  void dynamixelServosChanged(quint8,bool);
-
-public:
-  
-  enum { ServoRole = Qt::UserRole };
-
-  DynamixelBusModel(const AbstractSerial&, const DynamixelServos&, QObject * parent = 0);
+  DynamixelBusModel(const AbstractSerial*, const DynamixelServos&, QObject * parent = 0);
 
   QModelIndex index(int row, int column, const QModelIndex &parent) const;
 

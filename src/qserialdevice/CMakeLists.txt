@@ -9,7 +9,7 @@ include_directories( ${CMAKE_CURRENT_BINARY_DIR}
 
 # LIB_INCLUDE_DIRS - pathes to the header files of the library,
 #                    this paths is cached and useful in the future to build the /examples.
-set ( LIB_INCLUDE_DIRS 
+set ( QSERIALDEVICE_INCLUDE_DIRS 
     ${PROJECT_SOURCE_DIR}/qserialdevice
     ${PROJECT_SOURCE_DIR}/qserialdeviceenumerator
     CACHE string "Paths to include library headers."

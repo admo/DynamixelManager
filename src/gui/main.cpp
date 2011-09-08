@@ -1,10 +1,7 @@
-#include <QtGui/QApplication>
 #include "dynamixelmanager.h"
 #include "selectserialport.h"
-#include "baudrates.h"
 
-#include <iostream>
-
+#include <QtGui/QApplication>
 
 int main(int argc, char *argv[])
 {

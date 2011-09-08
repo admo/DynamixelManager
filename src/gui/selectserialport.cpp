@@ -1,15 +1,13 @@
 #include "selectserialport.h"
 #include "ui_selectserialport.h"
 #include "serialdeviceenumerator.h"
-#include "tri_logger.hpp"
 #include "abstractserial.h"
 
-#include <boost/foreach.hpp>
+#include <qt4/QtGui/qpushbutton.h>
 
 SelectSerialPortDialog::SelectSerialPortDialog(QWidget *parent) :
 QDialog(parent),
 m_ui(new Ui::SelectSerialPortDialog) {
-  TRI_LOG_STR("In SelectSerialPortDialog::SelectSerialPortDialog(QWidget");
   m_ui->setupUi(this);
 
   setFixedSize(sizeHint().width(), sizeHint().height());
@@ -26,35 +24,23 @@ m_ui(new Ui::SelectSerialPortDialog) {
   serialDeviceEnumerator->setEnabled(true);
   
   connect(m_ui->buttonBox, SIGNAL(accepted()), this, SLOT(openDeviceEmit()));
-
-  TRI_LOG_STR("Out SelectSerialPortDialog::SelectSerialPortDialog(QWidget");
 }
 
 SelectSerialPortDialog::~SelectSerialPortDialog() {
-  TRI_LOG_STR("In SelectSerialPortDialog::~SelectSerialPortDialog()");
-
   delete serialDeviceEnumerator;
   delete abstractSerial;
   delete m_ui;
-
-  TRI_LOG_STR("Out SelectSerialPortDialog::~SelectSerialPortDialog()");
 }
 
 void SelectSerialPortDialog::openDeviceEmit() {
-  TRI_LOG_STR("In SelectSerialPortDialog::OpenDeviceEmit()");
-  
   settings.setValue("serial/name", m_ui->listOfSerialDevices->currentText());
   settings.setValue("serial/baud", m_ui->baudRateComboBox->currentText());
 
   emit openDevice(m_ui->listOfSerialDevices->currentText(),
           m_ui->baudRateComboBox->currentText());
-
-  TRI_LOG_STR("Out SelectSerialPortDialog::OpenDeviceEmit()");
 }
 
 void SelectSerialPortDialog::listOfSerialDevicesChanged(const QStringList &list) {
-  TRI_LOG_STR("In SelectSerialPortDialog::serialDeviceEnumeratorChanged(const QStringList&)");
-
   QString actualSerialDevice;
   if (m_ui->listOfSerialDevices->currentIndex() < 0) {
     QString first = list.isEmpty() ? QString() : list.first();
@@ -71,13 +57,9 @@ void SelectSerialPortDialog::listOfSerialDevicesChanged(const QStringList &list)
     i = (i >= 0 ? i : 0);
     m_ui->listOfSerialDevices->setCurrentIndex(i);
   }
-
-  TRI_LOG_STR("Out SelectSerialPortDialog::serialDeviceEnumeratorChanged(const QStringList&)");
 }
 
 void SelectSerialPortDialog::selectedDeviceChanged(const QString &deviceName) {
-  TRI_LOG_STR("In SelectSerialPortDialog::selectedDeviceChanged(const QString&)");
-
   abstractSerial->setDeviceName(deviceName);
 
   QString actualBaudrate;
@@ -86,7 +68,6 @@ void SelectSerialPortDialog::selectedDeviceChanged(const QString &deviceName) {
     actualBaudrate = settings.value("serial/baud", first).toString();
   } else {
     actualBaudrate = m_ui->baudRateComboBox->currentText();
-    TRI_LOG(actualBaudrate.toStdString());
   }
 
   m_ui->baudRateComboBox->clear();
@@ -97,8 +78,6 @@ void SelectSerialPortDialog::selectedDeviceChanged(const QString &deviceName) {
     i = (i < 0 ? 0 : i);
     m_ui->baudRateComboBox->setCurrentIndex(i);
   }
-
-  TRI_LOG_STR("Out SelectSerialPortDialog::selectedDeviceChanged(const QString&)");
 }
 
 void SelectSerialPortDialog::changeEvent(QEvent *e) {

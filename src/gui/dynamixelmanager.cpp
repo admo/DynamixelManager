@@ -1,13 +1,9 @@
 #include "dynamixelmanager.h"
 #include "ui_dynamixelmanager.h"
-#include "DynamixelBusModel.h"
+#include "serialdeviceenumerator.h"
+
 #include <QtGui/QMessageBox>
 #include <QtDebug>
-#include "tri_logger.hpp"
-//#include "dyn4lin.h"
-#include "baudrates.h"
-#include "serialdeviceenumerator.h"
-#include <boost/foreach.hpp>
 
 DynamixelManager::DynamixelManager(QWidget *parent) :
 QMainWindow(parent), ui(new Ui::DynamixelManager), complianceMapper(this),
@@ -125,11 +121,11 @@ operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
 
   voltageLimitMapper->setMapping(ui->highVoltageLimitHorizontalSlider, 0);
   voltageLimitMapper->setMapping(ui->lowVoltageLimitHorizontalSlider, 1);
-  connect(ui->highVoltageLimitHorizontalSlider, SIGNAL(sliderMoved(int)), voltageLimitMapper.get(), SLOT(map()));
+  connect(ui->highVoltageLimitHorizontalSlider, SIGNAL(sliderMoved(int)), voltageLimitMapper, SLOT(map()));
   connect(ui->highVoltageLimitSpinBox, SIGNAL(valueChanged(int)), ui->highVoltageLimitHorizontalSlider, SIGNAL(sliderMoved(int)));
-  connect(ui->lowVoltageLimitHorizontalSlider, SIGNAL(sliderMoved(int)), voltageLimitMapper.get(), SLOT(map()));
+  connect(ui->lowVoltageLimitHorizontalSlider, SIGNAL(sliderMoved(int)), voltageLimitMapper, SLOT(map()));
   connect(ui->lowVoltageLimitSpinBox, SIGNAL(valueChanged(int)), ui->lowVoltageLimitHorizontalSlider, SIGNAL(sliderMoved(int)));
-  connect(voltageLimitMapper.get(), SIGNAL(mapped(int)), this, SLOT(voltageLimitChanged(int)));
+  connect(voltageLimitMapper, SIGNAL(mapped(int)), this, SLOT(voltageLimitChanged(int)));
 
   connect(ui->applyConfigurePushButton, SIGNAL(clicked()), this, SLOT(applyConfiguration()));
 }
@@ -181,7 +177,8 @@ void DynamixelManager::about() {
 
 void DynamixelManager::servosListCurrentIndexChanged(const QModelIndex &index) {
   /* Jeśli nie ma wybranego serwa, wtedy nic nie musimy robić */
-  if (!index.isValid())
+  ui->tabWidget->setEnabled(isServoSelected(index));
+  if (!isServoSelected(index))
     return;
 
   switch (ui->tabWidget->currentIndex()) {
@@ -189,7 +186,6 @@ void DynamixelManager::servosListCurrentIndexChanged(const QModelIndex &index) {
       connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
               this, SLOT(firstControlTableRAMUpdated(quint8)));
       emit updateControlTableRAM(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id);
-      ui->tabWidget->setEnabled(true);
       break;
     case 1: /* Configuration */
       emit updateControlTableROM(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id);
@@ -264,7 +260,8 @@ void DynamixelManager::controlTableROMUpdated(quint8 id) {
 
 void DynamixelManager::controlTableRAMUpdated(quint8 id) {
   QModelIndex index = ui->servosTreeView->currentIndex();
-  if (!index.isValid())
+  ui->tabWidget->setEnabled(isServoSelected(index));
+  if (!isServoSelected(index))
     return;
 
   DynamixelServo dynamixelServo = index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ();
@@ -369,7 +366,6 @@ void DynamixelManager::stopMovement() {
 void DynamixelManager::torqueEnabled() {
   bool torqueEnable = (ui->torqueOnControlRadioButton->isChecked() &&
           !ui->torqueOffControlRadioButton->isChecked()) ? true : false;
-  TRI_LOG(torqueEnable);
 
   QModelIndex index = ui->servosTreeView->currentIndex();
   if (!index.isValid())
@@ -381,7 +377,6 @@ void DynamixelManager::torqueEnabled() {
 void DynamixelManager::ledEnabled() {
   bool ledEnable = (ui->ledOnControlRadioButton->isChecked() &&
           !ui->ledOffControlRadioButton->isChecked()) ? true : false;
-  TRI_LOG(ledEnable);
 
   QModelIndex index = ui->servosTreeView->currentIndex();
   if (!index.isValid())
@@ -441,7 +436,6 @@ void DynamixelManager::pwmTorqueLimitChanged(int torqueLimit) {
 void DynamixelManager::pwmControlActivated(int index) {
   /* Zmiana sygnałów */
   bool isDisconnected = ui->pwmControlHorizontalSlider->disconnect(SIGNAL(valueChanged(int)));
-  TRI_LOG(isDisconnected);
   connect(ui->pwmControlHorizontalSlider, SIGNAL(valueChanged(int)), ui->pwmControlSpinBox, SLOT(setValue(int)));
 
 
@@ -472,8 +466,6 @@ void DynamixelManager::pwmControlActivated(int index) {
     default: /* Default */
       break;
   }
-  TRI_LOG(min);
-  TRI_LOG(max);
   ui->pwmControlSpinBox->setMaximum(max);
   ui->pwmControlSpinBox->setMinimum(min);
   ui->pwmControlHorizontalSlider->setMaximum(max);
@@ -487,14 +479,17 @@ void DynamixelManager::operatingModeAndAngleLimitChanged(int id) {
   int cw = ui->cwAngleLimitHorizontalSlider->value();
   int ccw = ui->ccwAngleLimitHorizontalSlider->value();
   bool joint = ui->jointModeRadioButton->isChecked();
+  
+  // Ustawienie dostępności ustawienia angleLimit w zaleznosci od wybranego trybu
+  ui->angleLimitGroupBox->setEnabled(joint);
 
   if (id == 0) {
     /* Sygnal od operating mode */
     ui->cwAngleLimitSpinBox->setValue(0);
     ui->ccwAngleLimitSpinBox->setValue(joint ? 1023 : 0);
-    ui->angleLimitGroupBox->setEnabled(joint);
-  } else if (!(cw < ccw) && joint) {
-    /* Sygnal od sliderow */
+  } 
+  else if (!(cw < ccw) && joint) {
+    /* Sygnal od sliderow  - cw nie może być mniejsze od ccw */
     ui->ccwAngleLimitHorizontalSlider->setValue((id == 1) ? cw + 1 : ccw);
     ui->cwAngleLimitHorizontalSlider->setValue((id == 2) ? ccw - 1 : cw);
   }
@@ -511,7 +506,6 @@ void DynamixelManager::voltageLimitChanged(int id) {
 }
 
 void DynamixelManager::applyConfiguration() {
-  TRI_LOG_STR("aaaa");
   QModelIndex index = ui->servosTreeView->currentIndex();
   if (!index.isValid())
     return;
@@ -569,9 +563,7 @@ void DynamixelManager::idChanged() {
 }
 
 void DynamixelManager::baudrateChanged() {
-  TRI_LOG_STR("In DynamixelManager::baudrateChanged()");
   /* Należy zapytać się, czy jest się pewnym */
-  TRI_LOG_STR("Out DynamixelManager::baudrateChanged()");
 }
 
 void DynamixelManager::returnLevelChanged() {
@@ -583,7 +575,5 @@ void DynamixelManager::returnLevelChanged() {
 }
 
 void DynamixelManager::returnDelayChanged() {
-  TRI_LOG_STR("In DynamixelManager::returnDelayChanged()");
   /* Należy zapytać się, czy jest się pewnym */
-  TRI_LOG_STR("Out DynamixelManager::returnDelayChanged()");
 }

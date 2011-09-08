@@ -3,7 +3,6 @@
 
 #include "dynamixelservo.h"
 #include "dynamixelservos.h"
-#include "abstractserial.h"
 
 #include <QtGlobal>
 #include <QThread>
@@ -17,7 +16,7 @@
 
 #include <algorithm>
 
-#include <termios.h>
+class AbstractSerial;
 
 class DynamixelBus : public QThread {
   Q_OBJECT
@@ -28,7 +27,7 @@ class DynamixelBus : public QThread {
   // Mutex chroniący sloty
   QMutex runMutex;
   // Urządzenie szeregowe
-  AbstractSerial serialDevice;
+  AbstractSerial* serialDevice;
 
   // Model widoku DynamixelServos
   QAbstractItemModel* dynamixelBusModel;

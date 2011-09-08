@@ -4,9 +4,6 @@ cmake_minimum_required (VERSION 2.6.0)
 find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
 include(${QT_USE_FILE})
 
-find_package (Boost 1.36.0 REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
-
 include_directories(${CMAKE_CURRENT_BINARY_DIR}
 	${QT_INCLUDES}
 	${QSERIALDEVICE_INCLUDE_DIRS}
@@ -69,7 +66,6 @@ add_executable (${APP_TARGET} ${APP_SRCS} ${APP_MOCS} ${APP_QRC} ${APP_UIS})
 
 target_link_libraries (${APP_TARGET}
 	${QT_LIBRARIES}
-	${TRILOGGER_LIBRARY}
 	${QDYNAMIXEL_LIBRARY}
 	${QSERIALDEVICE_LIBRARY}
 )

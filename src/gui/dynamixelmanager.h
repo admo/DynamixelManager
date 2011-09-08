@@ -2,12 +2,10 @@
 #define DYNAMIXELMANAGER_H
 
 #include <QtGui/QMainWindow>
+#include "DynamixelBusModel.h"
 #include "dynamixelbus.h"
 #include "searchservosdialog.h"
 #include "selectserialport.h"
-
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <QModelIndex>
 #include <QReadLocker>
@@ -30,9 +28,13 @@ private:
   SearchServosDialog* searchServosDialog;
   DynamixelBus *dynamixelBus;
   QSignalMapper operatingModeMapper;
-  boost::scoped_ptr<QSignalMapper> voltageLimitMapper;
+  QSignalMapper* voltageLimitMapper;
   QSignalMapper complianceMapper;
   QSignalMapper controlModeMapper;
+
+  bool isServoSelected(const QModelIndex& index) {
+    return index.isValid() ? static_cast<DynamixelBusModel::IndexType> (index.internalId()) == DynamixelBusModel::IndexTypeID : false;
+  }
 
 protected:
   //void closeEvent(QCloseEvent *event);
