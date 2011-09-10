@@ -10,14 +10,15 @@
 
 #include "dynamixelservo.h"
 
-#include <QVector>
+#include <QStringList>
+#include <QList>
 #include <QReadWriteLock>
 #include <QReadLocker>
 #include <QWriteLocker>
 
 class DynamixelServos {
 private:
-  QVector<DynamixelServo> dynamixelServos;
+  QList<DynamixelServo> dynamixelServos;
   mutable QReadWriteLock accessLock;
   
   // Wewnetrzne implementacje metod
@@ -40,8 +41,7 @@ private:
     return dynamixelServos[iGetServoIndex(id)];
   }
   void iRemoveSevo(quint8 id) {
-    int i = iGetServoIndex(id);
-    dynamixelServos.remove(i);
+    dynamixelServos.removeOne(DynamixelServo(id));
   }
   void iSetStatusReturnLevel(quint8 id, quint8 statRetLev) {
     iGetServo(id).statusReturnLevel = statRetLev;

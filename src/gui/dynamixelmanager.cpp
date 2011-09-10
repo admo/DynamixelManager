@@ -185,10 +185,10 @@ void DynamixelManager::servosListCurrentIndexChanged(const QModelIndex &index) {
     case 0: /* Operating */
       connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
               this, SLOT(firstControlTableRAMUpdated(quint8)));
-      emit updateControlTableRAM(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id);
+      emit updateControlTableRAM(index.data(DynamixelBusModel::IDRole).toUInt());
       break;
     case 1: /* Configuration */
-      emit updateControlTableROM(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id);
+      emit updateControlTableROM(index.data(DynamixelBusModel::IDRole).toUInt());
       break;
     default:
       break;
@@ -206,11 +206,11 @@ void DynamixelManager::tabWidgetCurrentIndexChanged(int index) {
       connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
               this, SLOT(firstControlTableRAMUpdated(quint8)));
       /* Wyślij żądanie aktualizacji RAM */
-      emit updateControlTableRAM(treeViewIndex.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id);
+      emit updateControlTableRAM(treeViewIndex.data(DynamixelBusModel::IDRole).toUInt());
       break;
     case 1: /* Configuration */
       /* Wyślij żądanie aktualizacji ROM */
-      emit updateControlTableROM(treeViewIndex.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id);
+      emit updateControlTableROM(treeViewIndex.data(DynamixelBusModel::IDRole).toUInt());
       break;
     default:
       break;
@@ -335,7 +335,7 @@ void DynamixelManager::positionChanged(int position) {
   if (!index.isValid())
     return;
 
-  emit setPosition(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, position);
+  emit setPosition(index.data(DynamixelBusModel::IDRole).toUInt(), position);
 
   /* Automatycznie włącza moment */
   ui->torqueOnControlRadioButton->setChecked(true);
@@ -347,7 +347,7 @@ void DynamixelManager::speedChanged(int speed) {
   if (!index.isValid())
     return;
 
-  emit setSpeed(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, speed);
+  emit setSpeed(index.data(DynamixelBusModel::IDRole).toUInt(), speed);
 
   /* Automatycznie włącza moment */
   ui->torqueOnControlRadioButton->setChecked(true);
@@ -358,8 +358,8 @@ void DynamixelManager::stopMovement() {
   QModelIndex index = ui->servosTreeView->currentIndex();
 
   if (index.isValid() && ui->torqueOnControlRadioButton->isChecked()) {
-    emit setTorqueEnable(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, false);
-    emit setTorqueEnable(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, true);
+    emit setTorqueEnable(index.data(DynamixelBusModel::IDRole).toUInt(), false);
+    emit setTorqueEnable(index.data(DynamixelBusModel::IDRole).toUInt(), true);
   }
 }
 
@@ -371,7 +371,7 @@ void DynamixelManager::torqueEnabled() {
   if (!index.isValid())
     return;
 
-  emit setTorqueEnable(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, torqueEnable);
+  emit setTorqueEnable(index.data(DynamixelBusModel::IDRole).toUInt(), torqueEnable);
 }
 
 void DynamixelManager::ledEnabled() {
@@ -382,7 +382,7 @@ void DynamixelManager::ledEnabled() {
   if (!index.isValid())
     return;
 
-  emit setLEDEnable(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, ledEnable);
+  emit setLEDEnable(index.data(DynamixelBusModel::IDRole).toUInt(), ledEnable);
 }
 
 void DynamixelManager::pwmCWMarginChanged(int cwMargin) {
@@ -390,7 +390,7 @@ void DynamixelManager::pwmCWMarginChanged(int cwMargin) {
   if (!index.isValid())
     return;
 
-  emit setCWMargin(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, cwMargin);
+  emit setCWMargin(index.data(DynamixelBusModel::IDRole).toUInt(), cwMargin);
 }
 
 void DynamixelManager::pwmCCWMarginChanged(int ccwMargin) {
@@ -398,7 +398,7 @@ void DynamixelManager::pwmCCWMarginChanged(int ccwMargin) {
   if (!index.isValid())
     return;
 
-  emit setCCWMargin(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, ccwMargin);
+  emit setCCWMargin(index.data(DynamixelBusModel::IDRole).toUInt(), ccwMargin);
 }
 
 void DynamixelManager::pwmCWSlopeChanged(int cwSlope) {
@@ -406,7 +406,7 @@ void DynamixelManager::pwmCWSlopeChanged(int cwSlope) {
   if (!index.isValid())
     return;
 
-  emit setCWSlope(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, cwSlope);
+  emit setCWSlope(index.data(DynamixelBusModel::IDRole).toUInt(), cwSlope);
 }
 
 void DynamixelManager::pwmCCWSlopeChanged(int ccwSlope) {
@@ -414,7 +414,7 @@ void DynamixelManager::pwmCCWSlopeChanged(int ccwSlope) {
   if (!index.isValid())
     return;
 
-  emit setCCWSlope(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, ccwSlope);
+  emit setCCWSlope(index.data(DynamixelBusModel::IDRole).toUInt(), ccwSlope);
 }
 
 void DynamixelManager::pwmPunchChanged(int punch) {
@@ -422,7 +422,7 @@ void DynamixelManager::pwmPunchChanged(int punch) {
   if (!index.isValid())
     return;
 
-  emit setPunch(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, punch);
+  emit setPunch(index.data(DynamixelBusModel::IDRole).toUInt(), punch);
 }
 
 void DynamixelManager::pwmTorqueLimitChanged(int torqueLimit) {
@@ -430,7 +430,7 @@ void DynamixelManager::pwmTorqueLimitChanged(int torqueLimit) {
   if (!index.isValid())
     return;
 
-  emit setTorqueLimit(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, torqueLimit);
+  emit setTorqueLimit(index.data(DynamixelBusModel::IDRole).toUInt(), torqueLimit);
 }
 
 void DynamixelManager::pwmControlActivated(int index) {
@@ -510,7 +510,7 @@ void DynamixelManager::applyConfiguration() {
   if (!index.isValid())
     return;
   
-  quint8 id = index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id;
+  quint8 id = index.data(DynamixelBusModel::IDRole).toUInt();
   
   quint8 alarmLED = 0;
   quint8 alarmShutdown = 0;
@@ -559,7 +559,7 @@ void DynamixelManager::idChanged() {
   if (!index.isValid())
     return;
 
-  emit setID(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, ui->idSpinBox->value());
+  emit setID(index.data(DynamixelBusModel::IDRole).toUInt(), ui->idSpinBox->value());
 }
 
 void DynamixelManager::baudrateChanged() {
@@ -571,7 +571,7 @@ void DynamixelManager::returnLevelChanged() {
   if (!index.isValid())
     return;
 
-  emit setStatRetLev(index.data(DynamixelBusModel::ServoRole).value<DynamixelServo > ().id, ui->returnLevelSpinBox->value());
+  emit setStatRetLev(index.data(DynamixelBusModel::IDRole).toUInt(), ui->statRetLevComboBox->currentText().toUInt());
 }
 
 void DynamixelManager::returnDelayChanged() {

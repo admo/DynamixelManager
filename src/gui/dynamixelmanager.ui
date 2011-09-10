@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>972</width>
-    <height>688</height>
+    <height>697</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1252,9 +1252,6 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="1">
-                <widget class="QSpinBox" name="idSpinBox"/>
-               </item>
                <item row="0" column="2">
                 <widget class="QPushButton" name="setIDPushButton">
                  <property name="text">
@@ -1333,9 +1330,28 @@
                 </spacer>
                </item>
                <item row="5" column="1">
-                <widget class="QSpinBox" name="returnLevelSpinBox">
+                <widget class="QComboBox" name="statRetLevComboBox">
+                 <item>
+                  <property name="text">
+                   <string>0</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>1</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>2</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QSpinBox" name="idSpinBox">
                  <property name="maximum">
-                  <number>2</number>
+                  <number>254</number>
                  </property>
                 </widget>
                </item>

@@ -15,15 +15,15 @@ serialDevice(serial), dynamixelServos(servos) {//  opened(false), deviceName(), 
   if (parent) {
     connect(parent, SIGNAL(deviceOpened(bool)), this, SLOT(deviceOpened(bool)));
     connect(parent, SIGNAL(deviceClosed()), this, SLOT(deviceClosed()));
-    connect(parent, SIGNAL(added(quint8,bool)), this, SLOT(dynamixelServosChanged(quint8, bool)));
-    connect(parent, SIGNAL(removed(quint8,bool)), this, SLOT(dynamixelServosChanged(quint8, bool)));
+    connect(parent, SIGNAL(added(quint8, bool)), this, SLOT(dynamixelServosChanged(quint8, bool)));
+    connect(parent, SIGNAL(removed(quint8, bool)), this, SLOT(dynamixelServosChanged(quint8, bool)));
   }
 }
 
 QModelIndex DynamixelBusModel::index(int row, int column, const QModelIndex& parent) const {
   if (!serialDevice->isOpen() || row < 0 || column < 0)
     return QModelIndex();
-  
+
   IndexType indexType = parent.isValid() ? static_cast<IndexType> (parent.internalId()) : IndexTypeRoot;
   switch (indexType) {
     case IndexTypeRoot:
@@ -105,6 +105,20 @@ QVariant DynamixelBusModel::data(const QModelIndex& index, int role) const {
           return var;
       }
     }
+    case IDRole:
+      switch (indexType) {
+        case IndexTypeDeviceName:
+          return QVariant();
+        case IndexTypeID:
+          return QVariant(dynamixelServos[index.row()].id);
+      }
+    case StatRetLevRole:
+      switch (indexType) {
+        case IndexTypeDeviceName:
+          return QVariant();
+        case IndexTypeID:
+          return QVariant(dynamixelServos[index.row()].statusReturnLevel);
+      }
     default:
       return QVariant();
   }

@@ -27,7 +27,7 @@ private slots:
 public:
 
   enum {
-    ServoRole = Qt::UserRole
+    ServoRole = Qt::UserRole, IDRole, StatRetLevRole
   };
 
   enum IndexType {

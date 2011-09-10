@@ -22,6 +22,8 @@ m_ui(new Ui::SelectSerialPortDialog) {
   serialDeviceEnumerator->setEnabled(true);
   
   connect(m_ui->buttonBox, SIGNAL(accepted()), this, SLOT(openDeviceEmit()));
+  
+  listOfSerialDevicesChanged(serialDeviceEnumerator->devicesAvailable());
 }
 
 SelectSerialPortDialog::~SelectSerialPortDialog() {
