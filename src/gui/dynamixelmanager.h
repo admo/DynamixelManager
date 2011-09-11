@@ -99,6 +99,7 @@ private slots:
   void voltageLimitChanged(int);
   void applyConfiguration();
   void idChanged();
+  void idSpinBoxChanged(int);
   void baudrateChanged();
   void returnLevelChanged();
   void returnDelayChanged();

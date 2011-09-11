@@ -128,6 +128,9 @@ operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
   connect(voltageLimitMapper, SIGNAL(mapped(int)), this, SLOT(voltageLimitChanged(int)));
 
   connect(ui->applyConfigurePushButton, SIGNAL(clicked()), this, SLOT(applyConfiguration()));
+  
+  /* Network! */
+  connect(ui->idSpinBox, SIGNAL(valueChanged(int)), this, SLOT(idSpinBoxChanged(int)));
 }
 
 DynamixelManager::~DynamixelManager() {
@@ -180,15 +183,19 @@ void DynamixelManager::servosListCurrentIndexChanged(const QModelIndex &index) {
   ui->tabWidget->setEnabled(isServoSelected(index));
   if (!isServoSelected(index))
     return;
+  
+  quint8 id = index.data(DynamixelBusModel::IDRole).toUInt();
 
   switch (ui->tabWidget->currentIndex()) {
     case 0: /* Operating */
       connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
               this, SLOT(firstControlTableRAMUpdated(quint8)));
-      emit updateControlTableRAM(index.data(DynamixelBusModel::IDRole).toUInt());
+      emit updateControlTableRAM(id);
       break;
     case 1: /* Configuration */
-      emit updateControlTableROM(index.data(DynamixelBusModel::IDRole).toUInt());
+      emit updateControlTableROM(id);
+      // Ustawienie network
+      ui->idSpinBox->setValue(id);
       break;
     default:
       break;
@@ -201,16 +208,20 @@ void DynamixelManager::tabWidgetCurrentIndexChanged(int index) {
   if (!treeViewIndex.isValid())
     return;
 
+  quint8 id = treeViewIndex.data(DynamixelBusModel::IDRole).toUInt();
+  
   switch (index) {
     case 0: /* Operating */
       connect(dynamixelBus, SIGNAL(controlTableRAMUpdated(quint8)),
               this, SLOT(firstControlTableRAMUpdated(quint8)));
       /* Wyślij żądanie aktualizacji RAM */
-      emit updateControlTableRAM(treeViewIndex.data(DynamixelBusModel::IDRole).toUInt());
+      emit updateControlTableRAM(id);
       break;
     case 1: /* Configuration */
       /* Wyślij żądanie aktualizacji ROM */
-      emit updateControlTableROM(treeViewIndex.data(DynamixelBusModel::IDRole).toUInt());
+      emit updateControlTableROM(id);
+      // Ustawienie network
+      ui->idSpinBox->setValue(id);
       break;
     default:
       break;
@@ -552,6 +563,10 @@ void DynamixelManager::applyConfiguration() {
   //	rom->maxTorque = ui->maxTorqueVerticalSlider->value();
   //
   //	rom->id = id;
+}
+
+void DynamixelManager::idSpinBoxChanged(int id) {
+  ui->setIDPushButton->setEnabled(!dynamixelBus->getDynamixelServos().isServo(id));
 }
 
 void DynamixelManager::idChanged() {
