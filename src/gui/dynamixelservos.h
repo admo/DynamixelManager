@@ -47,6 +47,10 @@ private:
     iGetServo(id).statusReturnLevel = statRetLev;
   }
   
+  void iSetID(quint8 id, quint8 newID) {
+    iGetServo(id).id = newID;
+  }
+  
 public:
   DynamixelServos() {}
   
@@ -87,6 +91,11 @@ public:
   void setStatusReturnLevel(quint8 id, quint8 statRetLev) {
     QWriteLocker locker(&accessLock);
     iSetStatusReturnLevel(id, statRetLev);
+  }
+  
+  void setID(quint8 id, quint8 newID) {
+    QWriteLocker locker(&accessLock);
+    iSetID(id, newID);
   }
   
   void setRAMData(quint8 id, const QByteArray& data) {

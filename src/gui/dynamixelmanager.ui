@@ -260,6 +260,9 @@
                     </item>
                     <item>
                      <widget class="QPushButton" name="centerPositionPushButton">
+                      <property name="enabled">
+                       <bool>false</bool>
+                      </property>
                       <property name="text">
                        <string>Center</string>
                       </property>
@@ -304,6 +307,9 @@
                    <layout class="QVBoxLayout" name="verticalLayout_6">
                     <item>
                      <widget class="QComboBox" name="pwmControlComboBox">
+                      <property name="enabled">
+                       <bool>false</bool>
+                      </property>
                       <item>
                        <property name="text">
                         <string>CW Compliance Margin</string>
@@ -330,6 +336,9 @@
                      <layout class="QHBoxLayout" name="horizontalLayout_4">
                       <item>
                        <widget class="QSlider" name="pwmControlHorizontalSlider">
+                        <property name="enabled">
+                         <bool>false</bool>
+                        </property>
                         <property name="orientation">
                          <enum>Qt::Horizontal</enum>
                         </property>
@@ -1096,6 +1105,9 @@
            <layout class="QGridLayout" name="gridLayout_9">
             <item row="0" column="0">
              <widget class="QGroupBox" name="groupBox_13">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
               <property name="title">
                <string>Alarm LED</string>
               </property>
@@ -1167,6 +1179,9 @@
             </item>
             <item row="0" column="1">
              <widget class="QGroupBox" name="groupBox_14">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
               <property name="title">
                <string>Shutdown</string>
               </property>
@@ -1273,10 +1288,17 @@
                 </widget>
                </item>
                <item row="2" column="1">
-                <widget class="QComboBox" name="baudrateComboBox"/>
+                <widget class="QComboBox" name="baudrateComboBox">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                </widget>
                </item>
                <item row="2" column="2">
                 <widget class="QPushButton" name="setBaudratePushButton">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="text">
                   <string>Set</string>
                  </property>
@@ -1310,10 +1332,17 @@
                 </widget>
                </item>
                <item row="7" column="1">
-                <widget class="QComboBox" name="returnDelayComboBox"/>
+                <widget class="QComboBox" name="returnDelayComboBox">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                </widget>
                </item>
                <item row="7" column="2">
                 <widget class="QPushButton" name="setReturnDelayPushButton">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="text">
                   <string>Set</string>
                  </property>
@@ -1332,29 +1361,17 @@
                  </property>
                 </spacer>
                </item>
-               <item row="5" column="1">
-                <widget class="QComboBox" name="statRetLevComboBox">
-                 <item>
-                  <property name="text">
-                   <string>0</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>1</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>2</string>
-                  </property>
-                 </item>
-                </widget>
-               </item>
                <item row="0" column="1">
                 <widget class="QSpinBox" name="idSpinBox">
                  <property name="maximum">
                   <number>254</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="1">
+                <widget class="QSpinBox" name="statRetLevSpinBox">
+                 <property name="maximum">
+                  <number>2</number>
                  </property>
                 </widget>
                </item>
@@ -1365,6 +1382,9 @@
              <layout class="QHBoxLayout" name="horizontalLayout_11">
               <item>
                <widget class="QPushButton" name="restoreDefaultConfigurePushButton">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="text">
                  <string>Restore Default</string>
                 </property>

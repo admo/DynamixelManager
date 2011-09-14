@@ -203,6 +203,11 @@ void DynamixelBus::setID(quint8 id, quint8 newID) {
   if (!ret) {
     emit communicationError(id);
   }
+  
+  // Zmień wartość ID dla serwa
+  dynamixelServos.setID(id, newID);
+  emit removed(id, true);
+  emit added(newID, true);
 }
 
 void DynamixelBus::setBaudRate(quint8 id, quint8 baudRate) {
@@ -291,6 +296,9 @@ void DynamixelBus::setStatRetLev(quint8 id, quint8 retLev) {
   if (!ret) {
     emit communicationError(id);
   }
+  
+  // Zmień wartoś StatRetLev
+  dynamixelServos.setStatusReturnLevel(id, retLev);
 }
 
 void DynamixelBus::setAlarmLED(quint8 id, quint8 alarm) {
@@ -476,7 +484,6 @@ void DynamixelBus::setConfiguration(quint8 id) {
     emit communicationError(id);
   }
 }
-
 
 void DynamixelBus::updateControlTableROM(quint8 id) {
   QMutexLocker locker(&runMutex);

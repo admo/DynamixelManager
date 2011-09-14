@@ -86,7 +86,6 @@ operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
   connect(this, SIGNAL(setTorqueLimit(quint8, quint16)), dynamixelBus, SLOT(setTorqueLimit(quint8, quint16)));
   
   /* Sygnały do konfiguracji serwa */
-  connect(this, SIGNAL(setID(quint8,quint8)), dynamixelBus, SLOT(setID(quint8,quint8)));
   connect(this, SIGNAL(setBaudRate(quint8,quint8)), dynamixelBus, SLOT(setBaudRate(quint8,quint8)));
   connect(this, SIGNAL(setRetDelayTime(quint8,quint8)), dynamixelBus, SLOT(setRetDelayTime(quint8,quint8)));
   connect(this, SIGNAL(setAngleLimits(quint8,quint16,quint16)), dynamixelBus, SLOT(setAngleLimits(quint8,quint16,quint16)));
@@ -94,7 +93,6 @@ operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
   connect(this, SIGNAL(setLoLimitVol(quint8,quint8)), dynamixelBus, SLOT(setLoLimitVol(quint8,quint8)));
   connect(this, SIGNAL(setHiLimitVol(quint8,quint8)), dynamixelBus, SLOT(setHiLimitVol(quint8,quint8)));
   connect(this, SIGNAL(setMaxTorque(quint8,quint16)), dynamixelBus, SLOT(setMaxTorque(quint8,quint16)));
-  connect(this, SIGNAL(setStatRetLev(quint8,quint8)), dynamixelBus, SLOT(setStatRetLev(quint8,quint8)));
   connect(this, SIGNAL(setAlarmLED(quint8,quint8)), dynamixelBus, SLOT(setAlarmLED(quint8,quint8)));
   connect(this, SIGNAL(setAlarmShutdonwn(quint8,quint8)), dynamixelBus, SLOT(setAlarmShutdonwn(quint8,quint8)));
 
@@ -131,6 +129,11 @@ operatingModeMapper(this), voltageLimitMapper(new QSignalMapper(this)) {
   
   /* Network! */
   connect(ui->idSpinBox, SIGNAL(valueChanged(int)), this, SLOT(idSpinBoxChanged(int)));
+  connect(ui->setIDPushButton, SIGNAL(clicked()), this, SLOT(idChanged()));
+  connect(this, SIGNAL(setID(quint8,quint8)), dynamixelBus, SLOT(setID(quint8,quint8)));
+  connect(ui->setReturnLevelPushButton, SIGNAL(clicked()), this, SLOT(returnLevelChanged()));
+  connect(this, SIGNAL(setStatRetLev(quint8,quint8)), dynamixelBus, SLOT(setStatRetLev(quint8,quint8)));
+  
 }
 
 DynamixelManager::~DynamixelManager() {
@@ -163,10 +166,6 @@ void DynamixelManager::closeDevice() {
 }
 
 void DynamixelManager::searchBus() {
-
-  /*searchServosDialog->show();
-  searchServosDialog->raise();
-  searchServosDialog->activateWindow();*/
   searchServosDialog->exec(); /* Co lepsze? */
 }
 
@@ -174,7 +173,7 @@ void DynamixelManager::about() {
   QMessageBox::about(this, tr("About Dynamixel Manager"), tr(
           "<h2>Dynamixel Manager alpha</h2>"
           "<p>Copyright &copy; 2010 Adam Oleksy."
-          "<p>Dynamixel Manager is a application, which "
+          "<p>Dynamixel Manager is an application, which "
           "can configure and control Dynamixel servos."));
 }
 
@@ -220,8 +219,6 @@ void DynamixelManager::tabWidgetCurrentIndexChanged(int index) {
     case 1: /* Configuration */
       /* Wyślij żądanie aktualizacji ROM */
       emit updateControlTableROM(id);
-      // Ustawienie network
-      ui->idSpinBox->setValue(id);
       break;
     default:
       break;
@@ -267,6 +264,10 @@ void DynamixelManager::controlTableROMUpdated(quint8 id) {
   ui->overheatingErrorShutdownCheckBox->setChecked(dynamixelServo.rom.overheatingErrorShutdown);
   ui->angleLimitErrorShutdownCheckBox->setChecked(dynamixelServo.rom.angleLimitErrorShutdown);
   ui->inputVoltageErrorShutdownCheckBox->setChecked(dynamixelServo.rom.inputVoltageErrorShutdown);
+  
+  /* Network */
+  ui->idSpinBox->setValue(id);
+  ui->statRetLevSpinBox->setValue(dynamixelServo.rom.statusReturnLevel);
 }
 
 void DynamixelManager::controlTableRAMUpdated(quint8 id) {
@@ -586,7 +587,7 @@ void DynamixelManager::returnLevelChanged() {
   if (!index.isValid())
     return;
 
-  emit setStatRetLev(index.data(DynamixelBusModel::IDRole).toUInt(), ui->statRetLevComboBox->currentText().toUInt());
+  emit setStatRetLev(index.data(DynamixelBusModel::IDRole).toUInt(), ui->statRetLevSpinBox->value());
 }
 
 void DynamixelManager::returnDelayChanged() {
